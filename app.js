@@ -628,9 +628,11 @@ function awardMission(id, mission) {
   saveState(); renderAll();
   showSuccessModal(mission);
 
-  // Notification validation
-  sendLocalNotif('Mission accomplie ! ⭐', `"${mission.title}" validée ! +${mission.xp} XP`);
-  API.submitMissionCompletion(id, STATE.user.id).catch(() => {});
+  // Notification
+  sendLocalNotif('Mission accomplie ! ⭐', mission.title + ' validée ! +' + mission.xp + ' XP');
+
+  // Pousse les XP et la progression vers Sheets immédiatement
+  API.addPoints(STATE.user.id, mission.xp, 'Mission : ' + mission.title).catch(() => {});
 }
 
 function addXp(amount, title, icon = '⭐') {
@@ -1079,7 +1081,18 @@ async function syncWithServer() {
       });
     }
     if (result.rewards?.ok && result.rewards.data?.length > 0 && result.rewards.data.length >= STATE.rewards.length) STATE.rewards = result.rewards.data;
-    if (result.userData?.ok && result.userData.data) Object.assign(STATE.user, result.userData.data);
+    if (result.userData?.ok && result.userData.data) {
+      var remote = result.userData.data;
+      // Prend toujours la valeur la plus haute (source de vérité = le max)
+      // Cela permet la synchro entre plusieurs téléphones
+      STATE.user.xp = Math.max(STATE.user.xp, Number(remote.xp) || 0);
+      STATE.user.totalXp = Math.max(STATE.user.totalXp, Number(remote.totalXp) || 0);
+      STATE.user.missionsDone = Math.max(STATE.user.missionsDone, Number(remote.missionsDone) || 0);
+      STATE.user.quetesDone = Math.max(STATE.user.quetesDone || 0, Number(remote.quetesDone) || 0);
+      STATE.user.streak = Math.max(STATE.user.streak, Number(remote.streak) || 0);
+      STATE.user.level = Math.max(STATE.user.level, Number(remote.level) || 1);
+      if (remote.lastActiveDate) STATE.user.lastActiveDate = remote.lastActiveDate;
+    }
     if (result.badges?.ok && result.badges.data) {
       result.badges.data.forEach(sb => {
         const local = STATE.badges.find(b => b.id === sb.badgeId);
