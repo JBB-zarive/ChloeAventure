@@ -448,15 +448,15 @@ function bindEvents() {
   });
 
   // Thème
-  $('#theme-toggle').addEventListener('click', toggleTheme);
+  $('#theme-toggle')?.addEventListener('click', toggleTheme);
 
   // Notifications
-  $('#notif-btn').addEventListener('click', () => requestNotifPermission());
+  $('#notif-btn')?.addEventListener('click', () => requestNotifPermission());
 
   // Parents
-  $('#open-pin-btn').addEventListener('click', openPinModal);
-  $('#pin-cancel').addEventListener('click', closePinModal);
-  $('#parents-logout').addEventListener('click', logoutParents);
+  $('#open-pin-btn')?.addEventListener('click', openPinModal);
+  $('#pin-cancel')?.addEventListener('click', closePinModal);
+  $('#parents-logout')?.addEventListener('click', logoutParents);
   $$('.pin-key').forEach(btn => {
     btn.addEventListener('click', () => {
       if (btn.dataset.digit !== undefined) handlePinDigit(btn.dataset.digit);
@@ -479,29 +479,29 @@ function bindEvents() {
   $$('.modal-backdrop').forEach(bd => bd.addEventListener('click', closeAllModals));
 
   // Modals
-  $('#success-close').addEventListener('click', () => $('#success-modal').classList.add('hidden'));
-  $('#badge-modal-close').addEventListener('click', () => $('#badge-modal').classList.add('hidden'));
-  $('#confirm-cancel').addEventListener('click', () => $('#confirm-modal').classList.add('hidden'));
-  $('#confirm-ok').addEventListener('click', () => { $('#confirm-modal').classList.add('hidden'); confirmCallback?.(); confirmCallback = null; });
+  $('#success-close')?.addEventListener('click', () => $('#success-modal').classList.add('hidden'));
+  $('#badge-modal-close')?.addEventListener('click', () => $('#badge-modal').classList.add('hidden'));
+  $('#confirm-cancel')?.addEventListener('click', () => $('#confirm-modal').classList.add('hidden'));
+  $('#confirm-ok')?.addEventListener('click', () => { $('#confirm-modal').classList.add('hidden'); confirmCallback?.(); confirmCallback = null; });
 
   // Formulaires
-  $('#add-mission-btn').addEventListener('click', () => openMissionForm(null, 'mission'));
-  $('#add-quete-btn').addEventListener('click', () => openMissionForm(null, 'quete'));
-  $('#mission-form-cancel').addEventListener('click', () => $('#mission-form-modal').classList.add('hidden'));
-  $('#mission-form').addEventListener('submit', handleMissionFormSubmit);
+  $('#add-mission-btn')?.addEventListener('click', () => openMissionForm(null, 'mission'));
+  $('#add-quete-btn')?.addEventListener('click', () => openMissionForm(null, 'quete'));
+  $('#mission-form-cancel')?.addEventListener('click', () => $('#mission-form-modal').classList.add('hidden'));
+  $('#mission-form')?.addEventListener('submit', handleMissionFormSubmit);
 
-  $('#add-reward-btn').addEventListener('click', () => openRewardForm());
-  $('#reward-form-cancel').addEventListener('click', () => $('#reward-form-modal').classList.add('hidden'));
-  $('#reward-form').addEventListener('submit', handleRewardFormSubmit);
+  $('#add-reward-btn')?.addEventListener('click', () => openRewardForm());
+  $('#reward-form-cancel')?.addEventListener('click', () => $('#reward-form-modal').classList.add('hidden'));
+  $('#reward-form')?.addEventListener('submit', handleRewardFormSubmit);
 
   // Paramètres
-  $('#save-pin-btn').addEventListener('click', saveNewPin);
-  $('#give-bonus-btn').addEventListener('click', giveBonus);
-  $('#save-api-btn').addEventListener('click', saveApiUrl);
-  $('#sync-btn').addEventListener('click', async () => { showToast('Synchronisation…', 'info'); await syncWithServer(); });
-  $('#push-btn').addEventListener('click', pushToServer);
-  $('#enable-notif-btn').addEventListener('click', requestNotifPermission);
-  $('#save-notif-btn').addEventListener('click', saveNotifTime);
+  $('#save-pin-btn')?.addEventListener('click', saveNewPin);
+  $('#give-bonus-btn')?.addEventListener('click', giveBonus);
+  $('#save-api-btn')?.addEventListener('click', saveApiUrl);
+  $('#sync-btn')?.addEventListener('click', async () => { showToast('Synchronisation…', 'info'); await syncWithServer(); });
+  $('#push-btn')?.addEventListener('click', pushToServer);
+  $('#enable-notif-btn')?.addEventListener('click', requestNotifPermission);
+  $('#save-notif-btn')?.addEventListener('click', saveNotifTime);
 
   // Init champs
   $('#api-url-input').value = API.getApiUrl();
@@ -944,25 +944,26 @@ function startAutoSync() {
 }
 
 async function pushToServer() {
-  const el = $('#sync-status');
-  if (el) el.textContent = '📤 Envoi vers Google Sheets…';
-  showToast('Envoi de toutes les données vers Sheets…', 'info');
+  var el = document.querySelector('#sync-status');
+  if (el) el.textContent = 'Envoi vers Google Sheets…';
+  showToast('Envoi de toutes les donnees vers Sheets…', 'info');
   try {
-    const result = await API.pushAllData({
+    var result = await API.pushAllData({
       missions: STATE.missions,
       rewards: STATE.rewards,
       user: STATE.user,
       history: STATE.history,
     });
     if (result.ok) {
-      const r = result.data?.results ?? {};
-      showToast(`✅ Envoyé ! ${r.missions ?? 0} missions, ${r.rewards ?? 0} récompenses`, 'success', 5000);
-      if (el) el.textContent = `✅ Données envoyées à ${new Date().toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'})}`;
+      var r = (result.data && result.data.results) ? result.data.results : {};
+      var msg = 'Envoye ! ' + (r.missions || 0) + ' missions, ' + (r.rewards || 0) + ' recompenses';
+      showToast(msg, 'success', 5000);
+      if (el) el.textContent = 'Donnees envoyees avec succes !';
     } else {
-      showToast('Erreur lors de l'envoi.', 'error');
+      showToast('Erreur lors de l envoi.', 'error');
     }
   } catch(e) {
-    showToast('Hors-ligne – impossible d'envoyer.', 'error');
+    showToast('Hors-ligne - impossible d envoyer.', 'error');
   }
 }
 
