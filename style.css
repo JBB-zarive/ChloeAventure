@@ -89,6 +89,7 @@ a { color: inherit; text-decoration: none; }
 
 /* ── APP LAYOUT ──────────────────────────────────────────────── */
 .app { position: fixed; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
+/* L'app-main prend tout l'espace restant entre header et nav */
 
 .app-header {
   height: calc(var(--header-h) + var(--safe-top));
@@ -108,12 +109,12 @@ a { color: inherit; text-decoration: none; }
 .icon-btn:active { transform: scale(0.9); }
 .xp-pill { display: flex; align-items: center; gap: 4px; background: var(--grad-hero); color: #fff; padding: 5px 10px; border-radius: 99px; font-family: var(--font-display); font-weight: 800; font-size: 0.82rem; }
 
-.app-main { flex: 1; overflow: hidden; position: relative; }
+.app-main { flex: 1; overflow: hidden; position: relative; min-height: 0; }
 
 /* ── PAGES ───────────────────────────────────────────────────── */
 .page {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  inset: 0;
   opacity: 0; pointer-events: none;
   transform: translateY(10px);
   transition: opacity 0.25s var(--ease-out), transform 0.25s var(--ease-out);
@@ -124,17 +125,14 @@ a { color: inherit; text-decoration: none; }
   height: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  /* padding-bottom = hauteur nav + safe area iPhone + marge */
-  padding: 16px 16px calc(var(--nav-h) + env(safe-area-inset-bottom, 20px) + 16px);
+  padding: 16px 16px 32px;
   scrollbar-width: none;
 }
 .page-scroll::-webkit-scrollbar { display: none; }
 
 /* ── BOTTOM NAV ──────────────────────────────────────────────── */
 .bottom-nav {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  /* Hauteur fixe + safe area dynamique */
+  flex-shrink: 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-top: 10px;
   background: var(--bg-nav);
