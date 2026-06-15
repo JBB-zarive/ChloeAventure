@@ -11,7 +11,10 @@
 /* ══════════════════════════════════════════════════════════════
    CONFIGURATION
 ══════════════════════════════════════════════════════════════ */
-const SPREADSHEET_ID = 'VOTRE_SPREADSHEET_ID_ICI'; // ← À remplacer
+// ⚠️ REMPLACEZ PAR L'ID DE VOTRE GOOGLE SHEET (pas l'ID du déploiement Apps Script)
+// L'ID se trouve dans l'URL de votre Sheet :
+// https://docs.google.com/spreadsheets/d/[CET_ID_ICI]/edit
+const SPREADSHEET_ID = 'VOTRE_SPREADSHEET_ID_ICI'; // ← Remplacez uniquement ceci
 
 const SHEETS = {
   USERS: 'utilisateurs',

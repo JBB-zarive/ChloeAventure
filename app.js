@@ -599,7 +599,7 @@ function bindEvents() {
   $('#save-api-btn').addEventListener('click', saveApiUrl);
   $('#sync-btn').addEventListener('click', () => { syncWithServer(); showToast('Synchronisation en cours…', 'info'); });
 
-  // Init valeur URL API
+  // Init valeur URL API (pré-remplie avec l'URL déployée)
   $('#api-url-input').value = API.getApiUrl();
 }
 

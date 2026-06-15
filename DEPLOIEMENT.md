@@ -90,15 +90,15 @@ git push -u origin main
 4. Exécuter en tant que : **Moi** (votre compte Google)
 5. Qui a accès : **Tout le monde** (requis pour l'app)
 6. Cliquer **Déployer**
-7. **Copier l'URL** du déploiement (format : `https://script.google.com/macros/s/AKfycby.../exec`)
+7. **Copier l'URL** du déploiement (format : `https://script.google.com/macros/s/AKfycbxvH_GYzlTHDtYRN6cT1MU2c1l1A6kZ9xFXj-u84JuZ6sxW_nRUcYPu2SRVr5yTsLM8/exec`)
 
-### Étape 5 – Connecter l'app à l'API
+### Étape 5 – Connecter l'app à l'API (déjà pré-configurée !)
 
 1. Ouvrir l'application Chloé Aventure sur votre téléphone
 2. Aller dans **⚙️ Parents** → entrer le PIN (`1234` par défaut)
 3. Aller dans l'onglet **Paramètres**
 4. Dans le champ **URL de l'API**, coller l'URL copiée à l'étape précédente
-5. Cliquer **Enregistrer l'URL API**
+5. Cliquer **Enregistrer l'URL API** *(ou ne rien changer, l'URL est déjà configurée par défaut)*
 6. Cliquer **🔄 Synchroniser maintenant**
 
 ---
