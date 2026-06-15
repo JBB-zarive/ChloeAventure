@@ -65,6 +65,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html {
   height: 100%;
+  height: -webkit-fill-available;
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
 }
@@ -72,7 +73,8 @@ body {
   font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
-  height: var(--real-vh, 100vh);
+  height: 100%;
+  height: -webkit-fill-available;
   overflow: hidden;
   transition: background 0.3s, color 0.3s;
 }
@@ -101,7 +103,10 @@ a { color: inherit; text-decoration: none; }
 /* ── APP LAYOUT ──────────────────────────────────────────────── */
 .app {
   position: fixed;
-  top: 0; left: 0; right: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
+  /* -webkit-fill-available = hauteur exacte écran iOS sans barres */
+  height: 100vh;
+  height: -webkit-fill-available;
   height: var(--real-vh, 100vh);
   display: flex;
   flex-direction: column;

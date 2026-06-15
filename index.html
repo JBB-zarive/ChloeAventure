@@ -10,19 +10,33 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <script>
-    // Fix hauteur iOS PWA - exécuté avant tout rendu
-    function fixIOSHeight() {
-      const vh = window.innerHeight;
-      document.documentElement.style.setProperty('--real-vh', vh + 'px');
-      document.documentElement.style.height = vh + 'px';
-      document.body.style.height = vh + 'px';
-      const app = document.getElementById('app');
-      if (app) app.style.height = vh + 'px';
+    // Fix hauteur iOS PWA standalone
+    // On détecte si on est en mode PWA installée
+    var isStandalone = window.navigator.standalone === true;
+    
+    function fixHeight() {
+      // Mesure la vraie hauteur disponible
+      var h = window.innerHeight;
+      document.documentElement.style.setProperty('--real-vh', h + 'px');
+      var app = document.getElementById('app');
+      if (app) {
+        app.style.height = h + 'px';
+        app.style.maxHeight = h + 'px';
+      }
     }
-    fixIOSHeight();
-    window.addEventListener('resize', fixIOSHeight);
+    
+    // En mode standalone iOS, on applique plusieurs fois
+    fixHeight();
+    if (isStandalone) {
+      // iOS met à jour innerHeight après le premier rendu
+      setTimeout(fixHeight, 0);
+      setTimeout(fixHeight, 100);
+      setTimeout(fixHeight, 300);
+      setTimeout(fixHeight, 500);
+    }
+    window.addEventListener('resize', fixHeight);
     window.addEventListener('orientationchange', function() {
-      setTimeout(fixIOSHeight, 300);
+      setTimeout(fixHeight, 500);
     });
   </script>
   <link rel="stylesheet" href="style.css" />
