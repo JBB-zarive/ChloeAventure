@@ -46,38 +46,9 @@ const DEFAULT_BADGES = [
   { id: 'streak_100',   icon: '👸', name: 'Centenaire de feu',    desc: '100 jours affilee',        cat: 'general', condition: { type: 'streak',         value: 100 } },
 ];
 
-const DEFAULT_MISSIONS = [
-  { id: 'm_bed',     title: 'Faire son lit',         desc: 'Ranger son lit dès le matin',             cat: 'Quotidien',  diff: 'facile',   xp: 15,  icon: '🛏️', freq: 'quotidien', validation: false, type: 'mission' },
-  { id: 'm_teeth',   title: 'Se brosser les dents',  desc: 'Matin et soir sans oublier',              cat: 'Quotidien',  diff: 'facile',   xp: 10,  icon: '🦷', freq: 'quotidien', validation: false, type: 'mission' },
-  { id: 'm_room',    title: 'Ranger sa chambre',     desc: 'Tout à sa place !',                       cat: 'Maison',     diff: 'moyen',    xp: 25,  icon: '🏠', freq: 'quotidien', validation: true,  type: 'mission' },
-  { id: 'm_dishes',  title: 'Aider la vaisselle',    desc: 'Mettre ou sortir la vaisselle',           cat: 'Maison',     diff: 'facile',   xp: 20,  icon: '🍽️', freq: 'quotidien', validation: false, type: 'mission' },
-  { id: 'm_read',    title: 'Lire 20 minutes',       desc: 'Un livre de ton choix',                   cat: 'Lecture',    diff: 'facile',   xp: 20,  icon: '📖', freq: 'quotidien', validation: false, type: 'mission' },
-  { id: 'm_sport',   title: 'Faire du sport',        desc: '30 minutes d\'activité physique',         cat: 'Quotidien',  diff: 'moyen',    xp: 35,  icon: '🏃', freq: 'quotidien', validation: false, type: 'mission' },
-  { id: 'm_garden',  title: 'Arroser les plantes',   desc: 'Prendre soin du jardin',                  cat: 'Nature',     diff: 'facile',   xp: 15,  icon: '🌱', freq: 'quotidien', validation: false, type: 'mission' },
-  { id: 'm_art',     title: 'Créer quelque chose',   desc: 'Dessiner, peindre ou bricoler',           cat: 'Créativité', diff: 'moyen',    xp: 30,  icon: '🎨', freq: 'hebdo',     validation: false, type: 'mission' },
-  // Quêtes
-  { id: 'q_screen',  title: 'Journée sans écran',    desc: 'Pas de téléphone de la journée !',        cat: 'Spécial',    diff: 'difficile',xp: 100, icon: '📵', freq: 'hebdo',     validation: true,  type: 'quete',  secret: false },
-  { id: 'q_helper',  title: 'Aide spontanée',        desc: 'Aider quelqu\'un sans qu\'on te le demande', cat:'Spécial', diff: 'epique',  xp: 75,  icon: '🤝', freq: 'unique',    validation: true,  type: 'quete',  secret: true  },
-  { id: 'q_week',    title: 'Semaine parfaite',      desc: 'Toutes les missions du jour pendant 7 jours', cat:'Spécial', diff:'epique',  xp: 150, icon: '🌟', freq: 'unique',    validation: false, type: 'quete',  secret: true  },
-  { id: 'q_reader',  title: 'Défi lecture',          desc: 'Lire pendant 7 jours d\'affilée',         cat: 'Lecture',    diff: 'difficile',xp: 80,  icon: '📚', freq: 'unique',    validation: false, type: 'quete',  secret: false },
-  // Van
-  { id: 'van_stars', title: 'Observer les étoiles',  desc: 'Trouver 3 constellations',                cat: 'Van',        diff: 'facile',   xp: 30,  icon: '🔭', freq: 'unique',    validation: false, type: 'van' },
-  { id: 'van_beach', title: 'Découvrir une plage',   desc: 'Explorer une nouvelle plage',             cat: 'Van',        diff: 'facile',   xp: 25,  icon: '🏖️', freq: 'unique',    validation: false, type: 'van' },
-  { id: 'van_hike',  title: 'Randonnée en famille',  desc: 'Au moins 5 km parcourus',                 cat: 'Van',        diff: 'moyen',    xp: 50,  icon: '🥾', freq: 'unique',    validation: false, type: 'van' },
-  { id: 'van_eco',   title: 'Ramasser des déchets',  desc: 'Protéger la nature en voyage',            cat: 'Van',        diff: 'moyen',    xp: 45,  icon: '♻️', freq: 'unique',    validation: false, type: 'van' },
-  { id: 'van_camp',  title: 'Aider au campement',    desc: 'Installer ou ranger le campement',        cat: 'Van',        diff: 'facile',   xp: 30,  icon: '⛺', freq: 'unique',    validation: false, type: 'van' },
-  { id: 'van_city',  title: 'Découvrir une ville',   desc: 'Explorer un endroit jamais visité',       cat: 'Van',        diff: 'facile',   xp: 30,  icon: '🏙️', freq: 'unique',    validation: false, type: 'van' },
-];
+const DEFAULT_MISSIONS = []; // Missions gérées depuis Google Sheets
 
-const DEFAULT_REWARDS = [
-  { id: 'r_movie',   icon: '🎬', title: 'Choisir le film',     desc: 'Tu choisis le film du soir !',  cost: 80  },
-  { id: 'r_dessert', icon: '🍰', title: 'Dessert préféré',      desc: 'Le dessert de ton choix',       cost: 50  },
-  { id: 'r_outing',  icon: '🎡', title: 'Sortie spéciale',      desc: 'Une sortie de ton choix',       cost: 300 },
-  { id: 'r_screen',  icon: '📱', title: '+1h d\'écran',         desc: 'Une heure de plus d\'écran',    cost: 100 },
-  { id: 'r_sushi',   icon: '🍣', title: 'Soirée sushi',         desc: 'Resto sushi en famille',        cost: 250 },
-  { id: 'r_book',    icon: '📚', title: 'Nouveau livre',        desc: 'Le livre de ton choix',         cost: 120 },
-  { id: 'r_friend',  icon: '👯', title: 'Inviter une amie',     desc: 'Une amie à dormir',             cost: 200 },
-];
+const DEFAULT_REWARDS = []; // Récompenses gérées depuis Google Sheets
 
 const LEVELS = [
   // ── Tier 1 : Débutante (1-5) ──────────────────────────────
@@ -207,20 +178,37 @@ function loadState() {
 function initApp() {
   loadState();
   applyTheme();
-  if (!STATE.missions.length) STATE.missions = DEFAULT_MISSIONS.map(m => ({ ...m }));
   checkDailyReset();
   updateStreak();
   renderAll();
   bindEvents();
   initPWA();
-  startAutoSync();
   updateNotifStatus();
 
+  // Si pas de missions en local, attend la sync avant de masquer le splash
+  if (!STATE.missions.length && API.getApiUrl()) {
+    // Sync d'abord, puis affiche l'app
+    syncWithServer().finally(() => {
+      hideSplash();
+    });
+    // Timeout de sécurité : affiche l'app après 5s même si sync échoue
+    setTimeout(hideSplash, 5000);
+  } else {
+    // Données locales dispo, affiche normalement
+    setTimeout(hideSplash, 2000);
+    startAutoSync();
+  }
+}
+
+function hideSplash() {
+  const splash = $('#splash-screen');
+  if (!splash || splash.classList.contains('hidden')) return;
+  splash.classList.add('fade-out');
   setTimeout(() => {
-    const splash = $('#splash-screen');
-    splash.classList.add('fade-out');
-    setTimeout(() => { splash.classList.add('hidden'); $('#app').classList.remove('hidden'); }, 600);
-  }, 2000);
+    splash.classList.add('hidden');
+    $('#app').classList.remove('hidden');
+    startAutoSync();
+  }, 600);
 }
 
 function checkDailyReset() {
@@ -1019,22 +1007,13 @@ function startAutoSync() {
 }
 
 function restoreDefaultMissions() {
-  let added = 0;
-  DEFAULT_MISSIONS.forEach(dm => {
-    if (!STATE.missions.find(m => m.id === dm.id)) {
-      STATE.missions.push(Object.assign({}, dm));
-      added++;
-    }
+  // Les missions viennent maintenant uniquement de Google Sheets
+  showToast('Synchronisation en cours...', 'info');
+  syncWithServer().then(() => {
+    showToast('Missions chargées depuis Sheets !', 'success');
+  }).catch(() => {
+    showToast('Erreur de connexion.', 'error');
   });
-  DEFAULT_REWARDS.forEach(dr => {
-    if (!STATE.rewards.find(r => r.id === dr.id)) {
-      STATE.rewards.push(Object.assign({}, dr));
-      added++;
-    }
-  });
-  saveState();
-  renderAll();
-  showToast(added > 0 ? (added + ' elements restaures !') : 'Tout etait deja la !', 'success');
 }
 
 async function pushToServer() {
