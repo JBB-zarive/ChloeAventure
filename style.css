@@ -113,9 +113,7 @@ a { color: inherit; text-decoration: none; }
 /* ── PAGES ───────────────────────────────────────────────────── */
 .page {
   position: absolute;
-  top: 0; left: 0; right: 0;
-  /* FIX safe area : le contenu s'arrête au dessus de la nav */
-  bottom: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
   opacity: 0; pointer-events: none;
   transform: translateY(10px);
   transition: opacity 0.25s var(--ease-out), transform 0.25s var(--ease-out);
@@ -126,19 +124,19 @@ a { color: inherit; text-decoration: none; }
   height: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  /* padding-bottom inclut la hauteur nav + safe area */
-  padding: 16px 16px calc(var(--nav-h) + var(--safe-bottom) + 24px);
+  /* padding-bottom = hauteur nav + safe area iPhone + marge */
+  padding: 16px 16px calc(var(--nav-h) + env(safe-area-inset-bottom, 20px) + 16px);
   scrollbar-width: none;
 }
 .page-scroll::-webkit-scrollbar { display: none; }
 
 /* ── BOTTOM NAV ──────────────────────────────────────────────── */
 .bottom-nav {
-  position: absolute;
+  position: fixed;
   bottom: 0; left: 0; right: 0;
-  height: calc(var(--nav-h) + var(--safe-bottom));
-  padding-bottom: var(--safe-bottom);
-  padding-top: 8px;
+  /* Hauteur fixe + safe area dynamique */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-top: 10px;
   background: var(--bg-nav);
   border-top: 1px solid var(--border);
   display: flex; align-items: flex-start; justify-content: space-around;
