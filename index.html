@@ -9,6 +9,22 @@
   <meta name="apple-mobile-web-app-title" content="Chloé Aventure" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <script>
+    // Fix hauteur iOS PWA - exécuté avant tout rendu
+    function fixIOSHeight() {
+      const vh = window.innerHeight;
+      document.documentElement.style.setProperty('--real-vh', vh + 'px');
+      document.documentElement.style.height = vh + 'px';
+      document.body.style.height = vh + 'px';
+      const app = document.getElementById('app');
+      if (app) app.style.height = vh + 'px';
+    }
+    fixIOSHeight();
+    window.addEventListener('resize', fixIOSHeight);
+    window.addEventListener('orientationchange', function() {
+      setTimeout(fixIOSHeight, 300);
+    });
+  </script>
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <title>Chloé Aventure</title>
