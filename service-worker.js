@@ -1,110 +1,77 @@
 /**
- * service-worker.js – Chloé Aventure
- * Cache statique + stratégie Network First pour l'API
+ * service-worker.js – Chloé Aventure v5
+ * Cache + notifications programmées
  */
 
-const CACHE_NAME = 'chloe-aventure-v1.0.0';
+const CACHE_NAME = 'chloe-aventure-v5';
 const STATIC_ASSETS = [
-  './',
-  './index.html',
-  './style.css',
-  './app.js',
-  './api.js',
-  './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
+  './', './index.html', './style.css', './app.js', './api.js',
+  './manifest.json', './icons/icon-192.png', './icons/icon-512.png',
   'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap',
 ];
 
-/* ── Installation : mise en cache des ressources statiques ──── */
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(STATIC_ASSETS))
-      .then(() => self.skipWaiting())
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(STATIC_ASSETS)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+    .then(() => self.clients.claim())
   );
 });
 
-/* ── Activation : nettoyage des anciens caches ─────────────── */
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
-      )
-    ).then(() => self.clients.claim())
-  );
-});
-
-/* ── Fetch : stratégie hybride ─────────────────────────────── */
-self.addEventListener('fetch', event => {
-  const { request } = event;
-  const url = new URL(request.url);
-
-  // API Google Apps Script → Network First (pas de cache)
+self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
   if (url.hostname.includes('script.google.com')) {
-    event.respondWith(
-      fetch(request).catch(() => new Response(JSON.stringify({ error: 'Offline' }), {
-        headers: { 'Content-Type': 'application/json' }
-      }))
-    );
+    e.respondWith(fetch(e.request).catch(() => new Response(JSON.stringify({ error: 'Offline' }), { headers: { 'Content-Type': 'application/json' } })));
     return;
   }
-
-  // Polices Google → Cache First
-  if (url.hostname.includes('fonts.')) {
-    event.respondWith(
-      caches.match(request).then(cached =>
-        cached || fetch(request).then(res => {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(c => c.put(request, clone));
-          return res;
-        })
-      )
-    );
-    return;
-  }
-
-  // Ressources statiques → Cache First avec fallback réseau
-  event.respondWith(
-    caches.match(request).then(cached => {
+  e.respondWith(
+    caches.match(e.request).then(cached => {
       if (cached) return cached;
-      return fetch(request).then(response => {
-        if (!response || response.status !== 200 || response.type === 'opaque') return response;
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
-        return response;
-      }).catch(() => {
-        // Fallback HTML pour navigation
-        if (request.mode === 'navigate') return caches.match('./index.html');
-      });
+      return fetch(e.request).then(res => {
+        if (!res || res.status !== 200 || res.type === 'opaque') return res;
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+        return res;
+      }).catch(() => e.request.mode === 'navigate' ? caches.match('./index.html') : null);
     })
   );
 });
 
-/* ── Notifications push (architecture) ─────────────────────── */
-self.addEventListener('push', event => {
-  const data = event.data?.json() ?? {};
-  const title = data.title || 'Chloé Aventure';
-  const options = {
-    body: data.body || 'Tu as de nouvelles missions à accomplir !',
+/* ── Notifications push ───────────────────────────────────────── */
+self.addEventListener('push', e => {
+  const data = e.data?.json() ?? {};
+  e.waitUntil(self.registration.showNotification(data.title || 'Chloé Aventure', {
+    body: data.body || 'Tu as des missions à accomplir !',
     icon: './icons/icon-192.png',
     badge: './icons/icon-72.png',
     vibrate: [100, 50, 100],
-    data: { url: data.url || './' },
-    actions: [
-      { action: 'open', title: '🎯 Voir mes missions' },
-      { action: 'close', title: 'Plus tard' }
-    ]
-  };
-  event.waitUntil(self.registration.showNotification(title, options));
+    data: { url: './' },
+    actions: [{ action: 'open', title: '🎯 Voir mes missions' }]
+  }));
 });
 
-self.addEventListener('notificationclick', event => {
-  event.notification.close();
-  if (event.action === 'open' || !event.action) {
-    event.waitUntil(clients.openWindow(event.notification.data?.url || './'));
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(clients.openWindow(e.notification.data?.url || './'));
+});
+
+/* ── Rappel quotidien via periodic background sync ──────────── */
+self.addEventListener('periodicsync', e => {
+  if (e.tag === 'daily-reminder') {
+    e.waitUntil(sendDailyReminder());
   }
 });
+
+async function sendDailyReminder() {
+  const allClients = await self.clients.matchAll();
+  if (allClients.length > 0) return; // App ouverte, pas besoin
+  await self.registration.showNotification('Chloé Aventure 🌍', {
+    body: 'N\'oublie pas tes missions du jour ! 🎯',
+    icon: './icons/icon-192.png',
+    badge: './icons/icon-72.png',
+    vibrate: [100, 50, 100],
+  });
+}
