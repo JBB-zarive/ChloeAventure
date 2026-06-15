@@ -991,8 +991,9 @@ async function syncWithServer() {
   if (el) el.textContent = '🔄 Synchronisation…';
   try {
     const result = await API.syncAll(STATE.user.id);
-    if (result.missions?.ok && result.missions.data?.length) STATE.missions = result.missions.data;
-    if (result.rewards?.ok && result.rewards.data?.length) STATE.rewards = result.rewards.data;
+    // Ne remplace les missions locales que si Sheets en a au moins autant
+    if (result.missions?.ok && result.missions.data?.length > 0 && result.missions.data.length >= STATE.missions.length) STATE.missions = result.missions.data;
+    if (result.rewards?.ok && result.rewards.data?.length > 0 && result.rewards.data.length >= STATE.rewards.length) STATE.rewards = result.rewards.data;
     if (result.userData?.ok && result.userData.data) Object.assign(STATE.user, result.userData.data);
     if (result.badges?.ok && result.badges.data) {
       result.badges.data.forEach(sb => {
