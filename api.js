@@ -204,6 +204,10 @@ const API = (() => {
 
     /* ── Synchronisation complète ─────────────────────────────── */
 
+    async pushAllData(data) {
+      return post('pushAllData', data);
+    },
+
     async syncAll(userId) {
       const [missions, rewards, badges, userData, history] = await Promise.all([
         this.getMissions(),

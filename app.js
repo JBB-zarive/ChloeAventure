@@ -499,6 +499,7 @@ function bindEvents() {
   $('#give-bonus-btn').addEventListener('click', giveBonus);
   $('#save-api-btn').addEventListener('click', saveApiUrl);
   $('#sync-btn').addEventListener('click', async () => { showToast('Synchronisation…', 'info'); await syncWithServer(); });
+  $('#push-btn').addEventListener('click', pushToServer);
   $('#enable-notif-btn').addEventListener('click', requestNotifPermission);
   $('#save-notif-btn').addEventListener('click', saveNotifTime);
 
@@ -940,6 +941,29 @@ function startAutoSync() {
   STATE.syncInterval = setInterval(() => {
     if (API.getApiUrl() && document.visibilityState !== 'hidden') syncWithServer();
   }, 2 * 60 * 1000);
+}
+
+async function pushToServer() {
+  const el = $('#sync-status');
+  if (el) el.textContent = '📤 Envoi vers Google Sheets…';
+  showToast('Envoi de toutes les données vers Sheets…', 'info');
+  try {
+    const result = await API.pushAllData({
+      missions: STATE.missions,
+      rewards: STATE.rewards,
+      user: STATE.user,
+      history: STATE.history,
+    });
+    if (result.ok) {
+      const r = result.data?.results ?? {};
+      showToast(`✅ Envoyé ! ${r.missions ?? 0} missions, ${r.rewards ?? 0} récompenses`, 'success', 5000);
+      if (el) el.textContent = `✅ Données envoyées à ${new Date().toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'})}`;
+    } else {
+      showToast('Erreur lors de l'envoi.', 'error');
+    }
+  } catch(e) {
+    showToast('Hors-ligne – impossible d'envoyer.', 'error');
+  }
 }
 
 async function syncWithServer() {
