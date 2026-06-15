@@ -16,7 +16,7 @@ const API = (() => {
 
   /** Retourne l'URL de l'API GAS configurée */
   function getApiUrl() {
-    return localStorage.getItem(API_URL_KEY) || '';
+    return localStorage.getItem(API_URL_KEY) || 'https://script.google.com/macros/s/AKfycbxvH_GYzlTHDtYRN6cT1MU2c1l1A6kZ9xFXj-u84JuZ6sxW_nRUcYPu2SRVr5yTsLM8/exec';
   }
 
   /** Enregistre l'URL de l'API GAS */
