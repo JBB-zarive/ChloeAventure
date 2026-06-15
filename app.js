@@ -26,6 +26,24 @@ const DEFAULT_BADGES = [
   { id: 'level_5',        icon: '👑', name: 'Héroïne Familiale',  desc: 'Atteindre le niveau 5',              cat: 'niveau',  condition: { type: 'level',          value: 5  } },
   { id: 'eco_warrior',    icon: '♻️', name: 'Éco-guerrière',      desc: 'Ramasser des déchets en voyage',     cat: 'van',     condition: { type: 'mission_id',     value: 'van_eco'  } },
   { id: 'stars_observer', icon: '🔭', name: 'Observatrice',       desc: 'Observer les étoiles',               cat: 'van',     condition: { type: 'mission_id',     value: 'van_stars'} },
+  // Niveaux
+  { id: 'level_5',      icon: '🛡️', name: 'Gardienne',            desc: 'Atteindre le niveau 5',    cat: 'niveau',  condition: { type: 'level',          value: 5   } },
+  { id: 'level_10',     icon: '⚔️', name: 'Maitre des quetes',    desc: 'Atteindre le niveau 10',   cat: 'niveau',  condition: { type: 'level',          value: 10  } },
+  { id: 'level_15',     icon: '🏆', name: 'Conquerante',          desc: 'Atteindre le niveau 15',   cat: 'niveau',  condition: { type: 'level',          value: 15  } },
+  { id: 'level_20',     icon: '👑', name: 'Heroine Familiale',    desc: 'Atteindre le niveau 20',   cat: 'niveau',  condition: { type: 'level',          value: 20  } },
+  { id: 'level_25',     icon: '💫', name: 'Etoile filante',       desc: 'Atteindre le niveau 25',   cat: 'niveau',  condition: { type: 'level',          value: 25  } },
+  { id: 'level_30',     icon: '👸', name: 'Chloe la Magnifique',  desc: 'Atteindre le niveau 30 !', cat: 'niveau',  condition: { type: 'level',          value: 30  } },
+  // XP
+  { id: 'xp_2000',      icon: '🌟', name: 'Super active',         desc: '2000 XP gagnes',           cat: 'xp',      condition: { type: 'total_xp',       value: 2000  } },
+  { id: 'xp_5000',      icon: '🚀', name: 'Astronaute XP',        desc: '5000 XP gagnes',           cat: 'xp',      condition: { type: 'total_xp',       value: 5000  } },
+  { id: 'xp_10000',     icon: '🌈', name: 'Legende des XP',       desc: '10000 XP gagnes',          cat: 'xp',      condition: { type: 'total_xp',       value: 10000 } },
+  // Missions
+  { id: 'missions_100', icon: '🎖️', name: 'Centurion',            desc: '100 missions accomplies',  cat: 'general', condition: { type: 'missions_total', value: 100  } },
+  { id: 'missions_200', icon: '🏅', name: 'Veterane',             desc: '200 missions accomplies',  cat: 'general', condition: { type: 'missions_total', value: 200  } },
+  // Streaks
+  { id: 'streak_14',    icon: '🔥', name: 'Deux semaines !',      desc: '14 jours affilee',         cat: 'general', condition: { type: 'streak',         value: 14  } },
+  { id: 'streak_60',    icon: '💎', name: 'Deux mois !',          desc: '60 jours affilee',         cat: 'general', condition: { type: 'streak',         value: 60  } },
+  { id: 'streak_100',   icon: '👸', name: 'Centenaire de feu',    desc: '100 jours affilee',        cat: 'general', condition: { type: 'streak',         value: 100 } },
 ];
 
 const DEFAULT_MISSIONS = [
@@ -62,11 +80,42 @@ const DEFAULT_REWARDS = [
 ];
 
 const LEVELS = [
-  { level: 1, name: 'Exploratrice',       min: 0,    max: 100,  emoji: '🌱' },
-  { level: 2, name: 'Aventurière',        min: 100,  max: 300,  emoji: '🧭' },
-  { level: 3, name: 'Gardienne',          min: 300,  max: 600,  emoji: '🛡️' },
-  { level: 4, name: 'Maître des quêtes',  min: 600,  max: 1000, emoji: '⚔️' },
-  { level: 5, name: 'Héroïne Familiale',  min: 1000, max: 9999, emoji: '👑' },
+  // ── Tier 1 : Débutante (1-5) ──────────────────────────────
+  { level:  1, name: 'Exploratrice',        min: 0,     max: 100,   emoji: '🌱' },
+  { level:  2, name: 'Aventurière',         min: 100,   max: 250,   emoji: '🧭' },
+  { level:  3, name: 'Randonneuse',         min: 250,   max: 450,   emoji: '🥾' },
+  { level:  4, name: 'Voyageuse',           min: 450,   max: 700,   emoji: '🎒' },
+  { level:  5, name: 'Gardienne',           min: 700,   max: 1000,  emoji: '🛡️' },
+  // ── Tier 2 : Confirmée (6-10) ─────────────────────────────
+  { level:  6, name: 'Chasseuse de quêtes', min: 1000,  max: 1400,  emoji: '🗺️' },
+  { level:  7, name: 'Exploratrice Van',    min: 1400,  max: 1900,  emoji: '🚐' },
+  { level:  8, name: 'Protectrice nature',  min: 1900,  max: 2500,  emoji: '🌿' },
+  { level:  9, name: 'Aventurière stellaire',min:2500,  max: 3200,  emoji: '🌟' },
+  { level: 10, name: 'Maître des quêtes',   min: 3200,  max: 4000,  emoji: '⚔️' },
+  // ── Tier 3 : Experte (11-15) ──────────────────────────────
+  { level: 11, name: 'Gardienne des étoiles',min:4000,  max: 4950,  emoji: '🔭' },
+  { level: 12, name: 'Exploratrice légendaire',min:4950,max: 6050,  emoji: '🏕️' },
+  { level: 13, name: 'Chercheuse de trésors',min:6050, max: 7300,  emoji: '💎' },
+  { level: 14, name: 'Navigatrice des mers', min: 7300, max: 8700,  emoji: '⚓' },
+  { level: 15, name: 'Conquérante',          min: 8700, max: 10250, emoji: '🏆' },
+  // ── Tier 4 : Élite (16-20) ────────────────────────────────
+  { level: 16, name: 'Gardienne de la forêt',min:10250,max: 11950, emoji: '🌳' },
+  { level: 17, name: 'Pilote de van',        min:11950, max: 13800, emoji: '🛞' },
+  { level: 18, name: 'Astronaute junior',    min:13800, max: 15800, emoji: '🚀' },
+  { level: 19, name: 'Exploratrice galactique',min:15800,max:17950, emoji: '🌌' },
+  { level: 20, name: 'Héroïne Familiale',    min:17950, max: 20250, emoji: '👑' },
+  // ── Tier 5 : Légendaire (21-25) ───────────────────────────
+  { level: 21, name: 'Légende de la nature', min:20250, max: 22750, emoji: '🦋' },
+  { level: 22, name: 'Maîtresse du temps',   min:22750, max: 25450, emoji: '⏳' },
+  { level: 23, name: 'Protectrice du monde', min:25450, max: 28350, emoji: '🌍' },
+  { level: 24, name: 'Reine de l aventure',  min:28350, max: 31450, emoji: '👸' },
+  { level: 25, name: 'Étoile filante',       min:31450, max: 34750, emoji: '💫' },
+  // ── Tier 6 : Mythique (26-30) ─────────────────────────────
+  { level: 26, name: 'Gardienne de l univers',min:34750,max: 38250, emoji: '🌠' },
+  { level: 27, name: 'Phénix aventurier',    min:38250, max: 41950, emoji: '🔥' },
+  { level: 28, name: 'Lumière du monde',     min:41950, max: 45850, emoji: '✨' },
+  { level: 29, name: 'Légende éternelle',    min:45850, max: 49950, emoji: '🌈' },
+  { level: 30, name: 'Chloé la Magnifique',  min:49950, max: 999999,emoji: '👸🌟' },
 ];
 
 const CONGRATS = [
@@ -567,6 +616,14 @@ function awardMission(id, mission) {
   if (mission.type === 'quete') STATE.user.quetesDone++;
   else STATE.user.missionsDone++;
 
+  // Verifie changement de niveau
+  var prevLevel = STATE.user.level;
+  var newLevelInfo = getLevelInfo(STATE.user.xp);
+  if (newLevelInfo.level > prevLevel) {
+    STATE.user.level = newLevelInfo.level;
+    setTimeout(function() { showLevelUpModal(newLevelInfo); }, 1800);
+  }
+
   checkBadges();
   saveState(); renderAll();
   showSuccessModal(mission);
@@ -861,6 +918,22 @@ function showSuccessModal(mission) {
   if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
 }
 
+function showLevelUpModal(lvl) {
+  var el = document.getElementById('badge-modal-icon');
+  var nameEl = document.getElementById('badge-modal-name');
+  var descEl = document.getElementById('badge-modal-desc');
+  var modal = document.getElementById('badge-modal');
+  if (!el || !modal) return;
+  el.textContent = lvl.emoji;
+  nameEl.textContent = 'Niveau ' + lvl.level + ' atteint !';
+  nameEl.style.fontSize = '1.2rem';
+  descEl.textContent = 'Tu es maintenant : ' + lvl.name;
+  modal.classList.remove('hidden');
+  launchConfetti('#badge-confetti');
+  if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+  sendLocalNotif('Niveau ' + lvl.level + ' ! ' + lvl.emoji, 'Tu es maintenant ' + lvl.name + ' !');
+}
+
 function showBadgeModal(badge) {
   $('#badge-modal-icon').textContent = badge.icon;
   $('#badge-modal-name').textContent = badge.name;
@@ -992,7 +1065,19 @@ async function syncWithServer() {
   try {
     const result = await API.syncAll(STATE.user.id);
     // Ne remplace les missions locales que si Sheets en a au moins autant
-    if (result.missions?.ok && result.missions.data?.length > 0 && result.missions.data.length >= STATE.missions.length) STATE.missions = result.missions.data;
+    if (result.missions?.ok && result.missions.data?.length > 0 && result.missions.data.length >= STATE.missions.length) {
+      // Correction automatique du bug type/createdAt inversés
+      STATE.missions = result.missions.data.map(m => {
+        var type = m.type;
+        var createdAt = m.createdAt;
+        if (!type && (createdAt === 'mission' || createdAt === 'quete' || createdAt === 'van')) {
+          type = createdAt;
+          createdAt = new Date().toISOString();
+        }
+        if (!type) type = 'mission';
+        return Object.assign({}, m, { type: type, createdAt: createdAt });
+      });
+    }
     if (result.rewards?.ok && result.rewards.data?.length > 0 && result.rewards.data.length >= STATE.rewards.length) STATE.rewards = result.rewards.data;
     if (result.userData?.ok && result.userData.data) Object.assign(STATE.user, result.userData.data);
     if (result.badges?.ok && result.badges.data) {
