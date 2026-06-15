@@ -944,25 +944,26 @@ function startAutoSync() {
 }
 
 async function pushToServer() {
-  const el = $('#sync-status');
-  if (el) el.textContent = '📤 Envoi vers Google Sheets…';
-  showToast('Envoi de toutes les données vers Sheets…', 'info');
+  var el = document.querySelector('#sync-status');
+  if (el) el.textContent = 'Envoi vers Google Sheets…';
+  showToast('Envoi de toutes les donnees vers Sheets…', 'info');
   try {
-    const result = await API.pushAllData({
+    var result = await API.pushAllData({
       missions: STATE.missions,
       rewards: STATE.rewards,
       user: STATE.user,
       history: STATE.history,
     });
     if (result.ok) {
-      const r = result.data?.results ?? {};
-      showToast(`✅ Envoyé ! ${r.missions ?? 0} missions, ${r.rewards ?? 0} récompenses`, 'success', 5000);
-      if (el) el.textContent = `✅ Données envoyées à ${new Date().toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'})}`;
+      var r = (result.data && result.data.results) ? result.data.results : {};
+      var msg = 'Envoye ! ' + (r.missions || 0) + ' missions, ' + (r.rewards || 0) + ' recompenses';
+      showToast(msg, 'success', 5000);
+      if (el) el.textContent = 'Donnees envoyees avec succes !';
     } else {
-      showToast('Erreur lors de l'envoi.', 'error');
+      showToast('Erreur lors de l envoi.', 'error');
     }
   } catch(e) {
-    showToast('Hors-ligne – impossible d'envoyer.', 'error');
+    showToast('Hors-ligne - impossible d envoyer.', 'error');
   }
 }
 
