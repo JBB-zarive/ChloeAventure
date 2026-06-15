@@ -943,6 +943,25 @@ function startAutoSync() {
   }, 2 * 60 * 1000);
 }
 
+function restoreDefaultMissions() {
+  let added = 0;
+  DEFAULT_MISSIONS.forEach(dm => {
+    if (!STATE.missions.find(m => m.id === dm.id)) {
+      STATE.missions.push(Object.assign({}, dm));
+      added++;
+    }
+  });
+  DEFAULT_REWARDS.forEach(dr => {
+    if (!STATE.rewards.find(r => r.id === dr.id)) {
+      STATE.rewards.push(Object.assign({}, dr));
+      added++;
+    }
+  });
+  saveState();
+  renderAll();
+  showToast(added > 0 ? (added + ' elements restaures !') : 'Tout etait deja la !', 'success');
+}
+
 async function pushToServer() {
   var el = document.querySelector('#sync-status');
   if (el) el.textContent = 'Envoi vers Google Sheets…';
