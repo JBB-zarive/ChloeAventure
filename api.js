@@ -224,15 +224,16 @@ const API = (() => {
     },
 
     async syncAll(userId) {
-      const [missions, rewards, badges, userData, history, completions] = await Promise.all([
+      const [missions, rewards, badges, userData, history, completions, pendingValidations] = await Promise.all([
         this.getMissions(),
         this.getRewards(),
         this.getBadges(userId),
         this.getUserData(userId),
         this.getHistory(userId, 20),
-        this.getCompletions(userId)
+        this.getCompletions(userId),
+        this.getPendingValidations()
       ]);
-      return { missions, rewards, badges, userData, history, completions };
+      return { missions, rewards, badges, userData, history, completions, pendingValidations };
     }
   };
 })();
