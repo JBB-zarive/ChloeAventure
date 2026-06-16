@@ -1,239 +1,125 @@
 /**
- * api.js – Chloé Aventure
- * Couche de communication avec Google Apps Script (backend REST)
- * et gestion du localStorage (cache local hors-ligne)
+ * api.js – Chloé Aventure v7
+ * Sheets = Source unique de vérité
+ * Chaque action écrit immédiatement dans Sheets
  */
 
-/* ═══════════════════════════════════════════════════════════════
-   CONFIGURATION
-═══════════════════════════════════════════════════════════════ */
 const API = (() => {
-
-  // Clé de stockage pour l'URL de l'API
   const API_URL_KEY = 'chloe_api_url';
-  const CACHE_PREFIX = 'chloe_cache_';
-  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbwRZdioao9ygpcse4ouQlG9Fhb4VPzPVreSvSBOdbdWzpxEX0COXUx8iZL0dv-NjKRg/exec';
 
-  /** Retourne l'URL de l'API GAS configurée */
   function getApiUrl() {
-    return localStorage.getItem(API_URL_KEY) || 'https://script.google.com/macros/s/AKfycbzaJRPiglzjpbRjJtBFYDChOG59U5oQymRaeYhTdsv5AJcfxpyM-MdNi_oBZekliGBY/exec';
+    return localStorage.getItem(API_URL_KEY) || DEFAULT_URL;
   }
-
-  /** Enregistre l'URL de l'API GAS */
   function setApiUrl(url) {
     localStorage.setItem(API_URL_KEY, url);
   }
 
-  /* ── Cache local ─────────────────────────────────────────────── */
-
-  function cacheGet(key) {
-    try {
-      const raw = localStorage.getItem(CACHE_PREFIX + key);
-      if (!raw) return null;
-      const entry = JSON.parse(raw);
-      if (Date.now() - entry.ts > CACHE_TTL) { localStorage.removeItem(CACHE_PREFIX + key); return null; }
-      return entry.data;
-    } catch { return null; }
-  }
-
-  function cacheSet(key, data) {
-    try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ ts: Date.now(), data })); } catch {}
-  }
-
-  function cacheClear(key) {
-    if (key) { localStorage.removeItem(CACHE_PREFIX + key); }
-    else {
-      Object.keys(localStorage).filter(k => k.startsWith(CACHE_PREFIX)).forEach(k => localStorage.removeItem(k));
-    }
-  }
-
-  /* ── Requêtes HTTP ───────────────────────────────────────────── */
-
-  /**
-   * Appel GET vers l'API GAS
-   * @param {string} action  – nom de l'action
-   * @param {object} params  – paramètres additionnels
-   * @param {boolean} useCache – utiliser le cache local
-   */
-  async function get(action, params = {}, useCache = true) {
+  async function get(action, params = {}) {
     const url = getApiUrl();
-    if (!url) return { ok: false, error: 'API non configurée', offline: true };
-
-    const cacheKey = action + JSON.stringify(params);
-    if (useCache) {
-      const cached = cacheGet(cacheKey);
-      if (cached) return { ok: true, data: cached, cached: true };
-    }
-
+    if (!url) return { ok: false, error: 'API non configurée' };
     try {
       const qs = new URLSearchParams({ action, ...params }).toString();
       const res = await fetch(`${url}?${qs}`, { method: 'GET' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
-      if (useCache) cacheSet(cacheKey, data);
       return { ok: true, data };
-    } catch (err) {
-      // Retour cache même expiré si hors-ligne
-      const stale = cacheGet(cacheKey) ?? null;
-      return { ok: false, error: err.message, offline: true, data: stale };
-    }
-  }
-
-  /**
-   * Appel POST vers l'API GAS
-   * @param {string} action
-   * @param {object} payload
-   */
-  async function post(action, payload = {}) {
-    const url = getApiUrl();
-    if (!url) return { ok: false, error: 'API non configurée', offline: true };
-
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' }, // GAS impose text/plain pour éviter preflight
-        body: JSON.stringify({ action, ...payload })
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      cacheClear(); // Invalide le cache après une écriture
-      return { ok: true, data };
-    } catch (err) {
+    } catch(err) {
       return { ok: false, error: err.message, offline: true };
     }
   }
 
-  /* ════════════════════════════════════════════════════════════════
-     API PUBLIQUE – Méthodes métier
-  ════════════════════════════════════════════════════════════════ */
+  async function post(action, payload = {}) {
+    const url = getApiUrl();
+    if (!url) return { ok: false, error: 'API non configurée' };
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action, ...payload })
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      return { ok: true, data };
+    } catch(err) {
+      return { ok: false, error: err.message, offline: true };
+    }
+  }
 
   return {
     getApiUrl,
     setApiUrl,
-    cacheClear,
 
-    /* ── Missions ─────────────────────────────────────────────── */
-
-    async getMissions() {
-      return get('getMissions');
+    // ── Sync complète ────────────────────────────────────────
+    async getAll(userId) {
+      return get('getAll', { userId });
     },
 
+    // ── Missions ─────────────────────────────────────────────
     async createMission(mission) {
       return post('createMission', { mission });
     },
-
-    async updateMission(id, updates) {
-      return post('updateMission', { id, updates });
+    async updateMission(id, mission) {
+      return post('updateMission', { id, mission });
     },
-
     async deleteMission(id) {
       return post('deleteMission', { id });
     },
 
-    /* ── Validations ──────────────────────────────────────────── */
-
-    async submitMissionCompletion(missionId, userId) {
-      return post('submitCompletion', { missionId, userId });
+    // ── Completions ───────────────────────────────────────────
+    async saveCompletion(userId, missionId, status, date) {
+      return post('saveCompletion', { userId, missionId, status, date });
+    },
+    async deleteCompletion(userId, missionId) {
+      return post('deleteCompletion', { userId, missionId });
     },
 
-    async validateMission(validationId, approved, comment = '', bonusPoints = 0) {
-      return post('validateMission', { validationId, approved, comment, bonusPoints });
+    // ── Validations ───────────────────────────────────────────
+    async submitValidation(userId, missionId, missionTitle, xp) {
+      return post('submitValidation', { userId, missionId, missionTitle, xp });
+    },
+    async validateMission(id, approved, comment, bonus) {
+      return post('validateMission', { id, approved, comment, bonus });
     },
 
-    async getPendingValidations() {
-      return get('getPendingValidations', {}, false);
+    // ── User ──────────────────────────────────────────────────
+    async updateUser(userId, data) {
+      return post('updateUser', { userId, data });
     },
-
-    /* ── Points & Niveaux ─────────────────────────────────────── */
-
-    async getUserData(userId) {
-      return get('getUserData', { userId });
-    },
-
     async addPoints(userId, points, reason) {
       return post('addPoints', { userId, points, reason });
     },
-
-    /* ── Badges ───────────────────────────────────────────────── */
-
-    async getBadges(userId) {
-      return get('getBadges', { userId });
+    async deductPoints(userId, points, reason) {
+      return post('deductPoints', { userId, points, reason });
     },
 
-    async checkAndAwardBadges(userId) {
-      return post('checkBadges', { userId });
+    // ── Badges ────────────────────────────────────────────────
+    async unlockBadge(userId, badgeId) {
+      return post('unlockBadge', { userId, badgeId });
     },
 
-    /* ── Récompenses ──────────────────────────────────────────── */
-
-    async getRewards() {
-      return get('getRewards');
-    },
-
+    // ── Rewards ───────────────────────────────────────────────
     async createReward(reward) {
       return post('createReward', { reward });
     },
-
-    async updateReward(id, updates) {
-      return post('updateReward', { id, updates });
+    async updateReward(id, reward) {
+      return post('updateReward', { id, reward });
     },
-
     async deleteReward(id) {
       return post('deleteReward', { id });
     },
-
-    async redeemReward(rewardId, userId) {
-      return post('redeemReward', { rewardId, userId });
+    async redeemReward(userId, rewardId) {
+      return post('redeemReward', { userId, rewardId });
     },
 
-    /* ── Historique ───────────────────────────────────────────── */
-
-    async getHistory(userId, limit = 50) {
-      return get('getHistory', { userId, limit });
-    },
-
-    /* ── Paramètres ───────────────────────────────────────────── */
-
-    async getSettings() {
-      return get('getSettings');
-    },
-
+    // ── Settings ──────────────────────────────────────────────
     async saveSettings(settings) {
       return post('saveSettings', { settings });
     },
 
-    /* ── Synchronisation complète ─────────────────────────────── */
-
-    async pushAllData(data) {
-      return post('pushAllData', data);
+    // ── Push complet ──────────────────────────────────────────
+    async pushAll(data) {
+      return post('pushAll', data);
     },
-
-    // Récupère les completions depuis Sheets
-    async getCompletions(userId) {
-      return get('getCompletions', { userId });
-    },
-
-    // Sauvegarde une completion dans Sheets
-    async saveCompletion(userId, missionId, status, date) {
-      return post('saveCompletion', { userId, missionId, status, date });
-    },
-
-    // Supprime les completions (pour le reset quotidien)
-    async deleteCompletions(userId, missionIds) {
-      return post('deleteCompletions', { userId, missionIds });
-    },
-
-    async syncAll(userId) {
-      const [missions, rewards, badges, userData, history, completions, pendingValidations] = await Promise.all([
-        this.getMissions(),
-        this.getRewards(),
-        this.getBadges(userId),
-        this.getUserData(userId),
-        this.getHistory(userId, 20),
-        this.getCompletions(userId),
-        this.getPendingValidations()
-      ]);
-      return { missions, rewards, badges, userData, history, completions, pendingValidations };
-    }
   };
 })();
