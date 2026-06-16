@@ -708,8 +708,9 @@ function awardMission(id, mission) {
   // Notification
   sendLocalNotif('Mission accomplie ! ⭐', mission.title + ' validée ! +' + mission.xp + ' XP');
 
-  // Pousse les XP et la progression vers Sheets immédiatement
+  // Pousse XP et completion vers Sheets immédiatement
   API.addPoints(STATE.user.id, mission.xp, 'Mission : ' + mission.title).catch(() => {});
+  API.saveCompletion(STATE.user.id, id, 'done', today()).catch(() => {});
 }
 
 function addXp(amount, title, icon = '⭐') {
@@ -1198,6 +1199,26 @@ async function syncWithServer() {
         if (!type) type = 'mission';
         return Object.assign({}, m, { type: type, createdAt: createdAt });
       });
+    }
+
+    // Sync des completions (missions accomplies partagées entre téléphones)
+    if (result.completions?.ok && result.completions.data) {
+      var todayStr = today();
+      result.completions.data.forEach(function(c) {
+        var missionId = c.missionId;
+        var existing = STATE.completions[missionId];
+        // Ajoute la completion si elle n'existe pas localement
+        // ou si elle est plus récente que la locale
+        if (!existing || c.status === 'done') {
+          // Vérifie que la mission quotidienne n'a pas été resetée aujourd'hui
+          var mission = STATE.missions.find(function(m) { return m.id === missionId; });
+          if (mission && mission.freq === 'quotidien' && c.date !== todayStr) {
+            return; // Mission quotidienne d'un autre jour, on ignore
+          }
+          STATE.completions[missionId] = { status: c.status, date: c.date };
+        }
+      });
+      saveState();
     }
     if (result.rewards?.ok && result.rewards.data?.length > 0 && result.rewards.data.length >= STATE.rewards.length) STATE.rewards = result.rewards.data;
     if (result.userData?.ok && result.userData.data) {
