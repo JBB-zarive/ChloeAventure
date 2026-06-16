@@ -208,15 +208,31 @@ const API = (() => {
       return post('pushAllData', data);
     },
 
+    // Récupère les completions depuis Sheets
+    async getCompletions(userId) {
+      return get('getCompletions', { userId });
+    },
+
+    // Sauvegarde une completion dans Sheets
+    async saveCompletion(userId, missionId, status, date) {
+      return post('saveCompletion', { userId, missionId, status, date });
+    },
+
+    // Supprime les completions (pour le reset quotidien)
+    async deleteCompletions(userId, missionIds) {
+      return post('deleteCompletions', { userId, missionIds });
+    },
+
     async syncAll(userId) {
-      const [missions, rewards, badges, userData, history] = await Promise.all([
+      const [missions, rewards, badges, userData, history, completions] = await Promise.all([
         this.getMissions(),
         this.getRewards(),
         this.getBadges(userId),
         this.getUserData(userId),
-        this.getHistory(userId, 20)
+        this.getHistory(userId, 20),
+        this.getCompletions(userId)
       ]);
-      return { missions, rewards, badges, userData, history };
+      return { missions, rewards, badges, userData, history, completions };
     }
   };
 })();
