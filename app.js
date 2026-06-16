@@ -658,10 +658,12 @@ function completeMission(id) {
   if (!mission || STATE.completions[id]) return;
 
   if (mission.validation) {
+    var validationId = uid();
     STATE.completions[id] = { status: 'pending', date: today() };
-    STATE.pendingValidations.push({ id: uid(), missionId: id, missionTitle: mission.title, desc: mission.desc, xp: mission.xp, date: new Date().toISOString() });
+    STATE.pendingValidations.push({ id: validationId, missionId: id, missionTitle: mission.title, desc: mission.desc, xp: mission.xp, date: new Date().toISOString() });
     showToast('En attente de validation parentale ⏳', 'info');
     saveState(); renderAll();
+    // Enregistre dans Sheets pour que papa/maman voient la demande
     API.submitMissionCompletion(id, STATE.user.id).catch(() => {});
   } else {
     awardMission(id, mission);
@@ -1237,6 +1239,31 @@ async function syncWithServer() {
       result.badges.data.forEach(sb => {
         const local = STATE.badges.find(b => b.id === sb.badgeId);
         if (local && sb.unlockedAt) { local.unlocked = true; local.unlockedAt = sb.unlockedAt; }
+      });
+    }
+
+    // Sync des validations en attente (missions avec contrôle parental)
+    // Permet aux téléphones parents de voir les demandes de validation
+    if (result.pendingValidations?.ok && result.pendingValidations.data) {
+      var remoteValidations = result.pendingValidations.data;
+      remoteValidations.forEach(function(rv) {
+        // Ajoute la validation si elle n'existe pas déjà localement
+        var exists = STATE.pendingValidations.find(function(lv) { return lv.id === rv.id; });
+        if (!exists && rv.id) {
+          STATE.pendingValidations.push({
+            id: rv.id,
+            missionId: rv.missionId,
+            missionTitle: rv.missionTitle,
+            desc: rv.desc || '',
+            xp: rv.xp || 0,
+            date: rv.date || new Date().toISOString()
+          });
+        }
+      });
+      // Supprime les validations locales qui ne sont plus pending sur le serveur
+      var remoteIds = remoteValidations.map(function(rv) { return rv.id; });
+      STATE.pendingValidations = STATE.pendingValidations.filter(function(lv) {
+        return !lv.id || remoteIds.includes(lv.id);
       });
     }
 
