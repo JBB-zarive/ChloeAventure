@@ -1239,6 +1239,22 @@ async function syncWithServer() {
         if (local && sb.unlockedAt) { local.unlocked = true; local.unlockedAt = sb.unlockedAt; }
       });
     }
+
+    // Sync des completions entre téléphones
+    if (result.completions?.ok && result.completions.data && result.completions.data.length > 0) {
+      var todayStr = today();
+      result.completions.data.forEach(function(c) {
+        var mission = STATE.missions.find(function(m) { return m.id === c.missionId; });
+        if (!mission) return;
+        // Ne pas importer une completion quotidienne d'un autre jour
+        if (mission.freq === 'quotidien' && c.date !== todayStr) return;
+        // Ajoute si pas déjà en local
+        if (!STATE.completions[c.missionId]) {
+          STATE.completions[c.missionId] = { status: c.status || 'done', date: c.date || todayStr };
+        }
+      });
+    }
+
     saveState(); renderAll();
     if (el) el.textContent = `✅ Synchronisé à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
   } catch(e) {
