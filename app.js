@@ -593,6 +593,9 @@ function bindEvents() {
   $('#save-api-btn')?.addEventListener('click', saveApiUrl);
   $('#sync-btn')?.addEventListener('click', async () => { showToast('Synchronisation…', 'info'); await syncWithServer(); });
   $('#push-btn')?.addEventListener('click', pushToServer);
+  // Bouton vider cache - bind direct sur l'élément via onclick pour iOS
+  var clearBtn = document.getElementById('clear-cache-btn');
+  if (clearBtn) clearBtn.onclick = clearAppCache;
   $('#enable-notif-btn')?.addEventListener('click', requestNotifPermission);
   $('#save-notif-btn')?.addEventListener('click', saveNotifTime);
 
@@ -1122,20 +1125,35 @@ function restoreDefaultMissions() {
   });
 }
 
-// Vider le cache service worker sans toucher aux données
-async function clearAppCache() {
-  try {
-    if ('caches' in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map(k => caches.delete(k)));
-      showToast('Cache vidé ! Rechargement...', 'success');
-      setTimeout(() => window.location.reload(true), 1500);
-    } else {
-      showToast('Cache non supporté sur ce navigateur.', 'error');
-    }
-  } catch(e) {
-    showToast('Erreur lors du vidage du cache.', 'error');
+// Vider le cache - version robuste iOS PWA
+function clearAppCache() {
+  showToast('Nettoyage en cours...', 'info', 2000);
+
+  var cleared = false;
+
+  // Méthode 1 : Cache API (service worker)
+  if ('caches' in window) {
+    caches.keys().then(function(keys) {
+      return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+    }).then(function() {
+      cleared = true;
+    }).catch(function() {});
   }
+
+  // Méthode 2 : Désenregistrer le service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+      regs.forEach(function(reg) { reg.unregister(); });
+    }).catch(function() {});
+  }
+
+  // Recharge après 1.5s peu importe le résultat
+  setTimeout(function() {
+    showToast('Rechargement...', 'success', 1000);
+    setTimeout(function() {
+      window.location.href = window.location.href + '?v=' + Date.now();
+    }, 800);
+  }, 1500);
 }
 
 async function pushToServer() {
