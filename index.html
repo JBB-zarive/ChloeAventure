@@ -173,21 +173,10 @@
           </select>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Difficulté</label>
-          <select id="mission-diff-input">
-            <option value="facile">🟢 Facile</option>
-            <option value="moyen">🟡 Moyen</option>
-            <option value="difficile">🔴 Difficile</option>
-            <option value="epique">💜 Épique</option>
-          </select>
-        </div>
-        <div class="form-group">
+      <div class="form-group">
           <label>Points XP</label>
           <input type="number" id="mission-points-input" value="20" min="5" max="500" />
         </div>
-      </div>
       <div class="form-row">
         <div class="form-group">
           <label>Fréquence</label>
@@ -500,6 +489,8 @@
               <button class="btn-secondary" style="margin-top:8px" id="push-btn">📤 Envoyer tout vers Sheets</button>
               <button class="btn-secondary" style="margin-top:8px" id="restore-btn">🔁 Restaurer missions par défaut</button>
             <p class="settings-desc" id="sync-status" style="margin-top:8px"></p>
+              <button class="btn-secondary" style="margin-top:8px" id="clear-cache-btn">🗑️ Vider le cache navigateur</button>
+              <p class="settings-desc" style="margin-top:4px;font-size:0.72rem;color:var(--text-muted)">Vide le cache des fichiers après une mise à jour. Historique et données conservés.</p>
           </div>
         </div>
       </div>

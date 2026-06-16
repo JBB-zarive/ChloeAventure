@@ -278,8 +278,8 @@ function renderHero() {
 
 function renderHomePage() {
   // Missions du jour
-  // Consigne 9 : compteur missions quotidiennes restantes
-  const allDailyMissions = STATE.missions.filter(m => m.type === 'mission' && m.freq === 'quotidien' && !m.secret);
+  // Consigne 9 : compteur basé sur catégorie 'Quotidien'
+  const allDailyMissions = STATE.missions.filter(m => m.cat === 'Quotidien' && !m.secret);
   const dailyRemaining = allDailyMissions.filter(m => STATE.completions[m.id]?.status !== 'done');
   const dailyDone = allDailyMissions.length - dailyRemaining.length;
   const counterEl = $('#daily-counter');
@@ -670,9 +670,9 @@ function awardMission(id, mission) {
   addXp(mission.xp, mission.title, mission.icon ?? '⭐');
 
   const t = today();
-  // Consigne 7 : compte les missions quotidiennes faites aujourd'hui
+  // Consigne 7 : basé sur catégorie 'Quotidien' (pas freq)
   const dailyDoneToday = STATE.missions.filter(m =>
-    m.freq === 'quotidien' && !m.secret &&
+    m.cat === 'Quotidien' && !m.secret &&
     STATE.completions[m.id]?.status === 'done' &&
     STATE.completions[m.id]?.date === t
   ).length;
@@ -1120,6 +1120,22 @@ function restoreDefaultMissions() {
   }).catch(() => {
     showToast('Erreur de connexion.', 'error');
   });
+}
+
+// Vider le cache service worker sans toucher aux données
+async function clearAppCache() {
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+      showToast('Cache vidé ! Rechargement...', 'success');
+      setTimeout(() => window.location.reload(true), 1500);
+    } else {
+      showToast('Cache non supporté sur ce navigateur.', 'error');
+    }
+  } catch(e) {
+    showToast('Erreur lors du vidage du cache.', 'error');
+  }
 }
 
 async function pushToServer() {
