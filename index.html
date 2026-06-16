@@ -304,6 +304,7 @@
         </div>
 
         <div class="section-header"><h3>Missions du jour</h3><button class="see-all-btn" data-tab="missions">Tout voir →</button></div>
+        <p id="daily-counter" class="daily-counter"></p>
         <div id="home-missions-list" class="missions-preview"></div>
 
         <div class="section-header"><h3>Quêtes actives</h3><button class="see-all-btn" data-tab="quetes">Tout voir →</button></div>
@@ -341,10 +342,11 @@
         <div class="quete-sections">
           <h3 class="section-title">⚡ Quêtes actives</h3>
           <div id="quetes-active-list" class="missions-grid"></div>
-          <h3 class="section-title" style="margin-top:20px">🔒 Quêtes secrètes</h3>
-          <div id="quetes-secret-list" class="missions-grid"></div>
-          <h3 class="section-title" style="margin-top:20px">✅ Quêtes accomplies</h3>
-          <div id="quetes-done-list" class="missions-grid"></div>
+
+          <div id="quetes-done-section" style="display:none">
+            <h3 class="section-title" style="margin-top:20px">✅ Quêtes accomplies</h3>
+            <div id="quetes-done-list" class="missions-grid"></div>
+          </div>
         </div>
       </div>
     </section>
@@ -356,6 +358,12 @@
         <div class="badges-progress-bar"><div class="badges-progress-fill" id="badges-progress-fill"></div></div>
         <p class="badges-progress-label" id="badges-progress-label">0 / 0 débloqués</p>
         <div id="badges-grid" class="badges-grid"></div>
+
+        <div id="trophees-section" style="display:none">
+          <h3 class="section-title" style="margin-top:24px">🏅 Trophées</h3>
+          <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:12px">Quêtes et aventures accomplies</p>
+          <div id="trophees-list" class="admin-list"></div>
+        </div>
       </div>
     </section>
 
@@ -465,6 +473,21 @@
               </div>
             </div>
             <button class="btn-primary" id="give-bonus-btn">Attribuer</button>
+          </div>
+          <div class="settings-section">
+            <h3>⚠️ Déduire des points</h3>
+            <p class="settings-desc">Retirer des XP à Chloé avec une explication obligatoire.</p>
+            <div class="form-row">
+              <div class="form-group">
+                <label>XP à déduire</label>
+                <input type="number" id="deduct-points-input" value="5" min="1" max="500" />
+              </div>
+              <div class="form-group">
+                <label>Raison <span class="req">*</span></label>
+                <input type="text" id="deduct-reason-input" placeholder="Explication obligatoire…" />
+              </div>
+            </div>
+            <button class="btn-danger" style="width:100%;padding:13px" id="deduct-btn">⚠️ Déduire les points
           </div>
           <div class="settings-section">
             <h3>🔄 Synchronisation</h3>

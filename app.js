@@ -215,9 +215,16 @@ function checkDailyReset() {
   const t = today();
   if (localStorage.getItem('chloe_last_reset') === t) return;
   localStorage.setItem('chloe_last_reset', t);
+  const todayStr = today();
   Object.keys(STATE.completions).forEach(id => {
     const m = STATE.missions.find(m => m.id === id);
-    if (m?.freq === 'quotidien') delete STATE.completions[id];
+    if (!m) return;
+    // Reset quotidien
+    if (m.freq === 'quotidien') delete STATE.completions[id];
+    // Consigne 3 : désactiver si date limite dépassée
+    if (m.due && new Date(m.due) < new Date(todayStr)) {
+      m.expired = true;
+    }
   });
   const now = new Date();
   if (now.getDay() === 1) {
@@ -271,7 +278,21 @@ function renderHero() {
 
 function renderHomePage() {
   // Missions du jour
-  const todayMissions = STATE.missions.filter(m => m.type === 'mission' && (m.freq === 'quotidien' || m.freq === 'unique') && STATE.completions[m.id]?.status !== 'done').slice(0, 3);
+  // Consigne 9 : compteur missions quotidiennes restantes
+  const allDailyMissions = STATE.missions.filter(m => m.type === 'mission' && m.freq === 'quotidien' && !m.secret);
+  const dailyRemaining = allDailyMissions.filter(m => STATE.completions[m.id]?.status !== 'done');
+  const dailyDone = allDailyMissions.length - dailyRemaining.length;
+  const counterEl = $('#daily-counter');
+  if (counterEl) {
+    if (allDailyMissions.length > 0) {
+      counterEl.textContent = dailyRemaining.length === 0 ? '🎉 Toutes les missions du jour sont faites !' : dailyRemaining.length + ' mission' + (dailyRemaining.length > 1 ? 's' : '') + ' quotidienne' + (dailyRemaining.length > 1 ? 's' : '') + ' restante' + (dailyRemaining.length > 1 ? 's' : '');
+      counterEl.style.color = dailyRemaining.length === 0 ? 'var(--green)' : 'var(--text-secondary)';
+    } else {
+      counterEl.textContent = '';
+    }
+  }
+
+  const todayMissions = STATE.missions.filter(m => m.type === 'mission' && (m.freq === 'quotidien' || m.freq === 'unique') && !m.secret && STATE.completions[m.id]?.status !== 'done').slice(0, 3);
   const $ml = $('#home-missions-list');
   $ml.innerHTML = todayMissions.length ? todayMissions.map(missionCardHTML).join('') : `<div class="empty-state"><span class="empty-state-icon">🎉</span>Toutes les missions du jour sont faites !</div>`;
   bindMissionCards($ml);
@@ -292,7 +313,8 @@ function renderHomePage() {
 
 function renderMissionsPage(filter = 'all') {
   const missions = STATE.missions.filter(m => m.type === 'mission');
-  const filtered = filter === 'all' ? missions : missions.filter(m => m.cat === filter);
+  // Consigne 8 : missions secrètes invisibles
+  const filtered = (filter === 'all' ? missions : missions.filter(m => m.cat === filter)).filter(m => !m.secret && !m.expired);
   const $list = $('#missions-list');
   $list.innerHTML = filtered.length ? filtered.map(missionCardHTML).join('') : `<div class="empty-state"><span class="empty-state-icon">🎯</span>Aucune mission ici.</div>`;
   bindMissionCards($list);
@@ -300,30 +322,50 @@ function renderMissionsPage(filter = 'all') {
 
 function renderQuetesPage() {
   const quetes = STATE.missions.filter(m => m.type === 'quete');
+  // Consigne 8 : secrètes totalement invisibles
   const active = quetes.filter(m => !m.secret && STATE.completions[m.id]?.status !== 'done');
-  const secret = quetes.filter(m => m.secret && STATE.completions[m.id]?.status !== 'done');
-  const done = quetes.filter(m => STATE.completions[m.id]?.status === 'done');
+  const done = quetes.filter(m => !m.secret && STATE.completions[m.id]?.status === 'done');
 
-  $('#quetes-active-list').innerHTML = active.length ? active.map(missionCardHTML).join('') : `<div class="empty-state">Aucune quête active.</div>`;
+  $('#quetes-active-list').innerHTML = active.length ? active.map(missionCardHTML).join('') : `<div class="empty-state">Aucune quête active pour le moment.</div>`;
   bindMissionCards($('#quetes-active-list'));
 
-  $('#quetes-secret-list').innerHTML = secret.length ? secret.map(m => missionCardHTML(m, true)).join('') : `<div class="empty-state">Aucune quête secrète… pour l'instant 🔒</div>`;
-  bindMissionCards($('#quetes-secret-list'));
-
-  $('#quetes-done-list').innerHTML = done.length ? done.map(missionCardHTML).join('') : `<div class="empty-state">Pas encore de quête accomplie.</div>`;
+  // Consigne 5 : sections vides masquées
+  const doneSect = $('#quetes-done-section');
+  if (doneSect) doneSect.style.display = done.length ? 'block' : 'none';
+  $('#quetes-done-list').innerHTML = done.length ? done.map(m => missionCardHTML(m, false, true)).join('') : '';
   bindMissionCards($('#quetes-done-list'));
 }
 
 function renderBadgesPage() {
   const unlocked = STATE.badges.filter(b => b.unlocked).length;
   $('#badges-progress-fill').style.width = (STATE.badges.length ? (unlocked / STATE.badges.length * 100) : 0) + '%';
-  $('#badges-progress-label').textContent = `${unlocked} / ${STATE.badges.length} débloqués`;
+  $('#badges-progress-label').textContent = unlocked + ' / ' + STATE.badges.length + ' débloqués';
   $('#badges-grid').innerHTML = STATE.badges.map(b => `
     <div class="badge-card ${b.unlocked ? 'unlocked' : 'locked'}">
       <span class="badge-icon">${b.icon}</span>
       <div class="badge-name">${b.name}</div>
       <div class="badge-desc">${b.unlocked ? ('✅ ' + (b.unlockedAt ? formatDate(b.unlockedAt) : 'Débloqué')) : b.desc}</div>
     </div>`).join('');
+
+  // Consigne 11 : Trophées = quêtes accomplies
+  const trophees = STATE.missions.filter(m =>
+    (m.type === 'quete' || m.type === 'van') &&
+    !m.secret &&
+    STATE.completions[m.id]?.status === 'done'
+  );
+  const trophSection = $('#trophees-section');
+  if (trophSection) {
+    trophSection.style.display = trophees.length ? 'block' : 'none';
+    $('#trophees-list').innerHTML = trophees.map(m => `
+      <div class="history-item">
+        <span class="history-icon">${m.icon ?? '🏅'}</span>
+        <div class="history-body">
+          <div class="history-title">${m.title}</div>
+          <div class="history-date">${STATE.completions[m.id]?.date ? formatDate(STATE.completions[m.id].date) : ''}</div>
+        </div>
+        <div class="history-xp">+${m.xp} XP</div>
+      </div>`).join('');
+  }
 }
 
 function renderRewardsPage() {
@@ -395,29 +437,43 @@ function renderAdminHistory() {
 /* ══════════════════════════════════════════════════════════════
    HTML BUILDERS
 ══════════════════════════════════════════════════════════════ */
-function missionCardHTML(m, forceSecret = false) {
+function missionCardHTML(m, forceSecret = false, showReplay = false) {
   const comp = STATE.completions[m.id];
   const isDone = comp?.status === 'done', isPending = comp?.status === 'pending';
-  const isSecret = m.secret && forceSecret && !isDone;
   const isQuete = m.type === 'quete';
   const statusClass = isDone ? 'done' : isPending ? 'pending' : isQuete ? 'quete-card' : '';
-  const secretClass = isSecret ? 'secret-card' : '';
 
-  return `<div class="mission-card ${statusClass} ${secretClass}" data-id="${m.id}">
+  // Consigne 2 : date limite formatée
+  var dueLine = '';
+  if (m.due) {
+    var dueDate = new Date(m.due);
+    var today = new Date(); today.setHours(0,0,0,0);
+    var diffDays = Math.ceil((dueDate - today) / 86400000);
+    var dueStr = diffDays < 0 ? 'Expirée' : diffDays === 0 ? 'Aujourd\'hui !' : diffDays === 1 ? 'Demain' : 'Jusqu\'au ' + dueDate.toLocaleDateString('fr-FR', {day:'numeric', month:'short'});
+    var dueColor = diffDays <= 1 ? 'var(--red)' : diffDays <= 3 ? 'var(--amber)' : 'var(--text-muted)';
+    dueLine = `<span class="mission-due" style="color:${dueColor}">📅 ${dueStr}</span>`;
+  }
+
+  // Consigne 6 : bouton revoir animation (uniquement sur missions accomplies)
+  var replayBtn = (isDone && showReplay) ? `<button class="replay-btn" data-id="${m.id}" title="Revoir l'animation">🎉</button>` : '';
+
+  return `<div class="mission-card ${statusClass}" data-id="${m.id}">
     <div class="mission-icon-wrap">
-      <span>${isSecret ? '🔒' : (m.icon ?? '🎯')}</span>
-      <span class="diff-dot diff-${m.diff ?? 'facile'}"></span>
+      <span>${m.icon ?? '🎯'}</span>
     </div>
     <div class="mission-body">
-      <div class="mission-title">${isSecret ? '??? Quête secrète' : m.title}</div>
-      <div class="mission-desc">${isSecret ? 'Accomplis des missions pour la découvrir !' : (m.desc ?? '')}</div>
+      <div class="mission-title">${m.title}</div>
+      ${m.desc ? `<div class="mission-desc">${m.desc}</div>` : ''}
       <div class="mission-meta">
-        ${!isSecret ? `<span class="mission-tag ${isQuete ? 'quete-tag' : ''}">${isQuete ? '🗺️ Quête' : m.cat}</span>` : ''}
+        <span class="mission-tag ${isQuete ? 'quete-tag' : ''}">${isQuete ? '🗺️ Quête' : m.cat}</span>
+        ${m.freq === 'quotidien' ? '<span class="mission-tag">🔁 Quotidien</span>' : m.freq === 'hebdo' ? '<span class="mission-tag">📆 Hebdo</span>' : ''}
         <span class="mission-xp">+${m.xp} XP</span>
+        ${dueLine}
       </div>
     </div>
     <div class="mission-action">
-      <button class="complete-btn ${isDone ? 'done-btn' : isPending ? 'pending-btn' : ''}" data-id="${m.id}" ${isDone || isPending || isSecret ? 'disabled' : ''}>
+      ${replayBtn}
+      <button class="complete-btn ${isDone ? 'done-btn' : isPending ? 'pending-btn' : ''}" data-id="${m.id}" ${isDone || isPending ? 'disabled' : ''}>
         ${isDone ? '✓' : isPending ? '⏳' : '○'}
       </button>
     </div>
@@ -554,6 +610,25 @@ function bindMissionCards(ctx) {
   $$('.complete-btn', ctx).forEach(btn => {
     btn.addEventListener('click', e => { e.stopPropagation(); completeMission(btn.dataset.id); });
   });
+  // Consigne 6 : bouton revoir animation
+  $$('.replay-btn', ctx).forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const m = STATE.missions.find(ms => ms.id === btn.dataset.id);
+      if (m) replayAnimation(m);
+    });
+  });
+}
+
+// Consigne 6 : rejouer uniquement l'animation, sans recréditer les XP
+function replayAnimation(mission) {
+  $('#success-emoji').textContent = mission.icon ?? '⭐';
+  $('#success-title').textContent = mission.type === 'quete' ? 'Quête accomplie ! 🗺️' : 'Mission accomplie !';
+  $('#success-message').textContent = CONGRATS[Math.floor(Math.random() * CONGRATS.length)];
+  $('#success-points').textContent = '+' + mission.xp + ' XP';
+  $('#success-modal').classList.remove('hidden');
+  launchConfetti('#confetti-container');
+  if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
 }
 function bindRewardCards(ctx) {
   $$('.reward-buy-btn', ctx).forEach(btn => btn.addEventListener('click', () => buyReward(btn.dataset.id)));
@@ -595,10 +670,21 @@ function awardMission(id, mission) {
   addXp(mission.xp, mission.title, mission.icon ?? '⭐');
 
   const t = today();
-  if (STATE.user.lastActiveDate !== t) {
+  // Consigne 7 : compte les missions quotidiennes faites aujourd'hui
+  const dailyDoneToday = STATE.missions.filter(m =>
+    m.freq === 'quotidien' && !m.secret &&
+    STATE.completions[m.id]?.status === 'done' &&
+    STATE.completions[m.id]?.date === t
+  ).length;
+
+  // Streak si au moins 3 missions quotidiennes complétées
+  if (dailyDoneToday >= 3 && STATE.user.lastActiveDate !== t) {
     const diff = STATE.user.lastActiveDate ? Math.floor((new Date(t) - new Date(STATE.user.lastActiveDate)) / 86400000) : 0;
     STATE.user.streak = diff === 1 ? STATE.user.streak + 1 : 1;
     STATE.user.lastActiveDate = t;
+  } else if (STATE.user.lastActiveDate !== t && dailyDoneToday < 3) {
+    // Pas encore 3 missions quotidiennes, on marque la date sans incrémenter
+    // Le streak sera incrémenté quand la 3e mission sera faite
   }
 
   if (mission.type === 'quete') STATE.user.quetesDone++;
@@ -689,10 +775,12 @@ function buyReward(id) {
   const reward = STATE.rewards.find(r => r.id === id);
   if (!reward) return;
   if (STATE.user.xp < reward.cost) { showToast('Pas assez de XP !', 'error'); return; }
-  showConfirmModal('🎁', `Obtenir "${reward.title}" ?`, `Coût : ${reward.cost} XP. Il te restera ${STATE.user.xp - reward.cost} XP.`, () => {
+  // Consigne 10 : pas de validation parentale pour les récompenses
+  showConfirmModal('🎁', 'Obtenir "' + reward.title + '" ?',
+    'Coût : ' + reward.cost + ' XP. Il te restera ' + (STATE.user.xp - reward.cost) + ' XP.', () => {
     STATE.user.xp -= reward.cost;
-    STATE.history.push({ id: uid(), title: `Récompense : ${reward.title}`, icon: reward.icon, xp: -reward.cost, date: new Date().toISOString() });
-    showToast(`"${reward.title}" demandée ! Les parents vont valider 🎉`, 'success', 4000);
+    STATE.history.push({ id: uid(), title: 'Récompense : ' + reward.title, icon: reward.icon, xp: -reward.cost, date: new Date().toISOString() });
+    showToast('Profite bien de "' + reward.title + '" ! 🎉', 'success', 4000);
     saveState(); renderAll();
     API.redeemReward(id, STATE.user.id).catch(() => {});
   });
@@ -715,7 +803,6 @@ function openMissionForm(id = null, defaultType = 'mission') {
     $('#mission-desc-input').value = m.desc ?? '';
     $('#mission-type-input').value = m.type ?? 'mission';
     $('#mission-cat-input').value = m.cat;
-    $('#mission-diff-input').value = m.diff ?? 'facile';
     $('#mission-points-input').value = m.xp;
     $('#mission-freq-input').value = m.freq ?? 'unique';
     $('#mission-due-input').value = m.due ?? '';
@@ -739,7 +826,6 @@ function handleMissionFormSubmit(e) {
     desc: $('#mission-desc-input').value.trim(),
     type: $('#mission-type-input').value,
     cat: $('#mission-cat-input').value,
-    diff: $('#mission-diff-input').value,
     xp: parseInt($('#mission-points-input').value) || 20,
     freq: $('#mission-freq-input').value,
     due: $('#mission-due-input').value || null,
@@ -841,8 +927,28 @@ function giveBonus() {
   const reason = $('#bonus-reason-input').value.trim() || 'Bonus parental';
   if (pts <= 0) { showToast('Entrez un nombre valide.', 'error'); return; }
   addXp(pts, reason, '⭐'); checkBadges(); saveState(); renderAll();
-  showToast(`+${pts} XP attribués ! 🌟`, 'success');
+  showToast('+' + pts + ' XP attribués ! 🌟', 'success');
   API.addPoints(STATE.user.id, pts, reason).catch(() => {});
+}
+
+// Consigne 4 : Déduire des points
+function deductPoints() {
+  const pts = parseInt($('#deduct-points-input').value) || 0;
+  const reason = $('#deduct-reason-input').value.trim();
+  if (pts <= 0) { showToast('Entrez un nombre valide.', 'error'); return; }
+  if (!reason) { showToast('Le commentaire est obligatoire.', 'error'); return; }
+  if (STATE.user.xp < pts) { showToast('Chloé n\'a pas assez de XP.', 'error'); return; }
+
+  showConfirmModal('⚠️', 'Déduire ' + pts + ' XP ?', reason, () => {
+    STATE.user.xp -= pts;
+    STATE.user.totalXp = Math.max(0, STATE.user.totalXp - pts);
+    STATE.history.push({ id: uid(), title: 'Malus : ' + reason, icon: '⚠️', xp: -pts, date: new Date().toISOString(), type: 'malus' });
+    saveState(); renderAll();
+    showToast('-' + pts + ' XP déduits.', 'error');
+    $('#deduct-points-input').value = '';
+    $('#deduct-reason-input').value = '';
+    API.addPoints(STATE.user.id, -pts, 'Malus : ' + reason).catch(() => {});
+  });
 }
 
 function saveApiUrl() {
