@@ -273,14 +273,7 @@ function startAutoSync() {
 
 function initApp() {
   loadLocal(); loadCache(); applyTheme(); renderAll(); bindEvents(); initPWA();
-  // Demande permission notifications si pas encore demandé
-  if ('Notification' in window && Notification.permission === 'default') {
-    setTimeout(() => {
-      if (confirm('Activer les notifications pour les badges, quêtes et récompenses ? 🔔')) {
-        requestNotifPermission();
-      }
-    }, 3000); // Attend 3s après le chargement
-  }
+  // Notifications : activées manuellement depuis Paramètres Parents
   if (!STATE.missions.length && API.getApiUrl()) { syncFromSheets().finally(() => hideSplash()); setTimeout(hideSplash, 6000); }
   else { setTimeout(hideSplash, 2000); startAutoSync(); }
 }
