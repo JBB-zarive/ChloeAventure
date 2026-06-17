@@ -338,7 +338,9 @@ function updateSyncStatus(msg) {
 function startAutoSync() {
   if (API.getApiUrl()) syncFromSheets();
   STATE.syncInterval = setInterval(() => {
-    if (API.getApiUrl() && document.visibilityState !== 'hidden') syncFromSheets();
+    if (API.getApiUrl() && document.visibilityState !== 'hidden' && !STATE.syncBlocked) {
+      syncFromSheets();
+    }
   }, 60 * 1000); // Toutes les 60 secondes
 }
 
@@ -834,39 +836,42 @@ function checkAndUnlockBadges() {
 window.doValidate = async function(validationId, approved) {
   showToast(approved ? 'Validation en cours...' : 'Refus en cours...', 'info');
 
-  // Trouve la validation — cherche par id exact (ID vient de Sheets)
+  // Trouve la validation dans STATE (ID vient de Sheets via renderAdminValidations)
   const validation = STATE.validations.find(v => v.id === validationId);
 
   const result = await API.validateMission(validationId, approved, '', 0);
   if (result.ok) {
-    // Met à jour localement AVANT la resync
     if (validation) {
       if (approved) {
-        // Mission validée → passe en 'done' immédiatement
+        // Mission validée → passe en 'done' immédiatement et de façon permanente
         STATE.completions[validation.missionId] = { status: 'done', date: today() };
-        // Crédite les XP localement
         const mission = STATE.missions.find(m => m.id === validation.missionId);
         if (mission) {
-          STATE.user.xp += mission.xp;
-          STATE.user.totalXp += mission.xp;
+          STATE.user.xp       += mission.xp;
+          STATE.user.totalXp  += mission.xp;
           STATE.user.missionsDone++;
-          const newLvl = getLevelInfo(STATE.user.xp);
+          const newLvl   = getLevelInfo(STATE.user.xp);
           const prevLevel = STATE.user.level;
           STATE.user.level = newLvl.level;
           if (newLvl.level > prevLevel) setTimeout(() => showLevelUpModal(newLvl), 500);
         }
       } else {
-        // Mission refusée → supprime la completion
         delete STATE.completions[validation.missionId];
       }
-      // Supprime la validation de la liste locale
       STATE.validations = STATE.validations.filter(v => v.id !== validationId);
     }
+
     saveCache();
     renderAll();
     showToast(approved ? 'Mission validée ! ✅' : 'Mission refusée.', approved ? 'success' : 'error');
-    // Attendre que Sheets ait fini d'écrire avant de resyncer
-    setTimeout(syncFromSheets, 3000);
+
+    // Bloque la sync auto pendant 15s pour laisser Sheets écrire
+    // et éviter que la sync n'écrase notre 'done' local
+    STATE.syncBlocked = true;
+    setTimeout(() => {
+      STATE.syncBlocked = false;
+      syncFromSheets(); // Sync après que Sheets ait eu le temps d'écrire
+    }, 15000);
   } else {
     showToast('Erreur : ' + (result.error || 'Inconnue'), 'error');
   }
