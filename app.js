@@ -745,5 +745,26 @@ function launchConfetti(selector) {
 }
 
 function sendLocalNotif(title, body) { if (!('Notification' in window) || Notification.permission !== 'granted') return; try { new Notification(title, { body, icon: 'icons/icon-192.png' }); } catch(e) {} }
-function initPWA() { if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(() => {}); }
+function initPWA() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('service-worker.js').then(reg => {
+    // Vérifie s'il y a une mise à jour disponible
+    reg.update();
+    // Si un nouveau SW attend, l'active immédiatement
+    if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    reg.addEventListener('updatefound', () => {
+      const newSW = reg.installing;
+      if (!newSW) return;
+      newSW.addEventListener('statechange', () => {
+        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+          // Nouvelle version disponible → recharge silencieusement
+          newSW.postMessage({ type: 'SKIP_WAITING' });
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            window.location.reload();
+          });
+        }
+      });
+    });
+  }).catch(() => {});
+}
 document.addEventListener('DOMContentLoaded', initApp);
