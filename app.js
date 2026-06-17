@@ -224,10 +224,25 @@ async function syncFromSheets() {
     }
 
     // Completions → convertit en objet { missionId: { status, date } }
+    // Filtre selon la fréquence de la mission pour le reset automatique
     if (d.completions) {
       STATE.completions = {};
+      const todayStr = today();
+      const weekStart = getWeekStart();
+      const allMissions = d.missions || STATE.missions;
       (Array.isArray(d.completions) ? d.completions : []).forEach(c => {
-        STATE.completions[c.missionId] = { status: c.status || 'done', date: c.date || today() };
+        const mission = allMissions.find(m => m.id === c.missionId);
+        if (!mission) return;
+        // Reset quotidien : ignore les completions pas d'aujourd'hui
+        if (mission.freq === 'quotidien' && c.date !== todayStr) return;
+        // Reset hebdo : ignore les completions avant lundi de cette semaine
+        if (mission.freq === 'hebdo' && c.date < weekStart) return;
+        // Unique : missions → disparaît le lendemain / quêtes → restent (trophées)
+        const isMission = mission.type === 'mission';
+        if (c.date === todayStr || !isMission) {
+          STATE.completions[c.missionId] = { status: c.status || 'done', date: c.date };
+        }
+        // Missions uniques d'un autre jour → disparaissent de l'affichage
       });
     }
 
@@ -271,7 +286,10 @@ async function syncFromSheets() {
 
     // Paramètres (PIN depuis Sheets)
     if (d.settings?.pin) {
-      STATE.pin = d.settings.pin;
+      STATE.pin = String(d.settings.pin);
+    } else {
+      // PIN par défaut si non configuré dans Sheets
+      STATE.pin = STATE.pin || '1234';
     }
 
     saveCache();
@@ -377,6 +395,16 @@ function renderHero() {
   $('#stat-badges').textContent = STATE.unlockedBadges.length;
   $('#stat-missions-done').textContent = u.missionsDone;
   $('#header-xp-value').textContent = u.xp;
+}
+
+function getWeekStart() {
+  const now = new Date();
+  const day = now.getDay(); // 0=dim, 1=lun...
+  const diff = day === 0 ? -6 : 1 - day; // Revient au lundi
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diff);
+  monday.setHours(0, 0, 0, 0);
+  return monday.toISOString().slice(0, 10);
 }
 
 function isCompletedToday(missionId) {
