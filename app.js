@@ -367,7 +367,18 @@ function renderBadgesPage() {
   const unlocked = badges.filter(b => b.unlocked).length;
   $('#badges-progress-fill').style.width = (badges.length ? (unlocked / badges.length * 100) : 0) + '%';
   $('#badges-progress-label').textContent = unlocked + ' / ' + badges.length + ' débloqués';
-  $('#badges-grid').innerHTML = badges.map(b =>
+  // Trie par difficulté : débloqués d'abord (par date), puis verrouillés par xpReward croissant
+  const badgesSorted = [...badges].sort((a, b) => {
+    if (a.unlocked && !b.unlocked) return -1;
+    if (!a.unlocked && b.unlocked) return 1;
+    if (a.unlocked && b.unlocked) {
+      // Les deux débloqués : par date de déblocage
+      return new Date(a.unlockedAt || 0) - new Date(b.unlockedAt || 0);
+    }
+    // Les deux verrouillés : par xpReward croissant (plus facile en premier)
+    return (a.xpReward || 0) - (b.xpReward || 0);
+  });
+  $('#badges-grid').innerHTML = badgesSorted.map(b =>
     '<div class="badge-card ' + (b.unlocked ? 'unlocked' : 'locked') + '">' +
     '<span class="badge-icon">' + b.icon + '</span>' +
     '<div class="badge-name">' + b.name + '</div>' +
