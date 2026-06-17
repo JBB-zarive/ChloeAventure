@@ -711,6 +711,10 @@ function bindEvents() {
   if (clearBtn) clearBtn.onclick = clearAppCache;
   $('#api-url-input').value = API.getApiUrl();
   $$('.emoji-input').forEach(input => input.addEventListener('focus', () => input.select()));
+
+  // Notifications
+  $('#enable-notif-btn')?.addEventListener('click', requestNotifPermission);
+  updateNotifStatus();
 }
 function bindMissionCards(ctx) { $$('.complete-btn', ctx).forEach(btn => { btn.addEventListener('click', e => { e.stopPropagation(); completeMission(btn.dataset.id); }); }); }
 function bindRewardCards(ctx) { $$('.reward-buy-btn', ctx).forEach(btn => btn.addEventListener('click', () => buyReward(btn.dataset.id))); }
@@ -778,9 +782,21 @@ async function requestNotifPermission() {
 
 function updateNotifStatus() {
   const el = $('#notif-status');
-  if (!el || !('Notification' in window)) return;
-  const labels = { granted: '✅ Activées', denied: '❌ Refusées', default: '⚪ Non activées' };
-  el.textContent = labels[Notification.permission] || 'Inconnu';
+  const btn = $('#enable-notif-btn');
+  if (!el) return;
+  if (!('Notification' in window)) {
+    el.textContent = '⚠️ Non supportées sur cet appareil';
+    if (btn) btn.style.display = 'none';
+    return;
+  }
+  const labels = {
+    granted: '✅ Notifications activées',
+    denied: '❌ Refusées — activez-les dans Réglages iOS → Safari',
+    default: '⚪ Non activées — cliquez pour activer'
+  };
+  el.textContent = labels[Notification.permission] || '';
+  // Cache le bouton si déjà accordé ou refusé définitivement
+  if (btn) btn.style.display = Notification.permission === 'granted' ? 'none' : 'block';
 }
 function initPWA() {
   if (!('serviceWorker' in navigator)) return;
