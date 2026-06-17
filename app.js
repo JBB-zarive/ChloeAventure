@@ -286,7 +286,18 @@ async function syncFromSheets() {
       // Car la feuille completions ne contient que les 'done'
       STATE.validations.forEach(v => {
         if (v.status === 'pending' && !STATE.completions[v.missionId]) {
+          // Ne pas remettre en pending si on vient de valider cette mission (< 30s)
+          const recentlyValidated = STATE.recentlyValidated[v.missionId];
+          if (recentlyValidated && (Date.now() - recentlyValidated) < 30000) {
+            return; // Ignore — on vient de la valider
+          }
           STATE.completions[v.missionId] = { status: 'pending', date: v.submittedAt ? v.submittedAt.slice(0,10) : today() };
+        }
+      });
+      // Nettoie les entrées recentlyValidated > 30s
+      Object.keys(STATE.recentlyValidated).forEach(mId => {
+        if (Date.now() - STATE.recentlyValidated[mId] > 30000) {
+          delete STATE.recentlyValidated[mId];
         }
       });
     }
@@ -841,6 +852,8 @@ window.doValidate = async function(validationId, approved) {
     if (validation) {
       if (approved) {
         STATE.completions[validation.missionId] = { status: 'done', date: today() };
+        // Marque cette mission pour ignorer le pending de la prochaine sync
+        STATE.recentlyValidated[validation.missionId] = Date.now();
         const mission = STATE.missions.find(m => m.id === validation.missionId);
         if (mission) {
           STATE.user.xp       += mission.xp;
