@@ -291,13 +291,17 @@ async function syncFromSheets() {
       // CRUCIAL : ajoute les completions 'pending' depuis les validations Sheets
       // Car la feuille completions ne contient que les 'done'
       STATE.validations.forEach(v => {
-        if (v.status === 'pending' && !STATE.completions[v.missionId]) {
-          // Ne pas remettre en pending si on vient de valider cette mission (< 30s)
+        if (v.status === 'pending') {
+          const existing = STATE.completions[v.missionId];
+          // Ne JAMAIS écraser un 'done' par un 'pending'
+          if (existing && existing.status === 'done') return;
+          // Ne pas remettre en pending si on vient de valider (< 60s)
           const recentlyValidated = STATE.recentlyValidated[v.missionId];
-          if (recentlyValidated && (Date.now() - recentlyValidated) < 30000) {
-            return; // Ignore — on vient de la valider
+          if (recentlyValidated && (Date.now() - recentlyValidated) < 60000) return;
+          // Seulement si pas encore de completion locale
+          if (!existing) {
+            STATE.completions[v.missionId] = { status: 'pending', date: v.submittedAt ? v.submittedAt.slice(0,10) : today() };
           }
-          STATE.completions[v.missionId] = { status: 'pending', date: v.submittedAt ? v.submittedAt.slice(0,10) : today() };
         }
       });
       // Nettoie les entrées recentlyValidated > 30s
