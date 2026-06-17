@@ -200,6 +200,7 @@ function loadLocal() {
 ══════════════════════════════════════════════════════════════ */
 async function syncFromSheets() {
   if (STATE.syncing) return;
+  if (STATE.syncBlocked) return; // Bloqué après une validation
   STATE.syncing = true;
   updateSyncStatus('🔄 Synchronisation...');
 
@@ -782,10 +783,7 @@ function awardMission(id, mission) {
 
   // Envoi vers Sheets (en arrière-plan)
   API.saveCompletion(STATE.user.id, id, 'done', t).catch(() => {});
-  API.addPoints(STATE.user.id, mission.xp, 'Mission : ' + mission.title).catch(() => {
-    // Si échec, resync pour garder la cohérence
-    setTimeout(syncFromSheets, 3000);
-  });
+  API.addPoints(STATE.user.id, mission.xp, 'Mission : ' + mission.title).catch(() => {});
 }
 
 /* ══════════════════════════════════════════════════════════════
