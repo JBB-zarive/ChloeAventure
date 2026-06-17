@@ -263,6 +263,13 @@ async function syncFromSheets() {
     // Validations en attente
     if (d.validations) {
       STATE.validations = Array.isArray(d.validations) ? d.validations : [];
+      // CRUCIAL : ajoute les completions 'pending' depuis les validations Sheets
+      // Car la feuille completions ne contient que les 'done'
+      STATE.validations.forEach(v => {
+        if (v.status === 'pending' && !STATE.completions[v.missionId]) {
+          STATE.completions[v.missionId] = { status: 'pending', date: v.submittedAt ? v.submittedAt.slice(0,10) : today() };
+        }
+      });
     }
 
     // Récompenses
@@ -809,7 +816,7 @@ function checkAndUnlockBadges() {
 window.doValidate = async function(validationId, approved) {
   showToast(approved ? 'Validation en cours...' : 'Refus en cours...', 'info');
 
-  // Trouve la validation pour connaître la mission concernée
+  // Trouve la validation — cherche par id exact (ID vient de Sheets)
   const validation = STATE.validations.find(v => v.id === validationId);
 
   const result = await API.validateMission(validationId, approved, '', 0);
