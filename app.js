@@ -81,11 +81,11 @@ const CONGRATS = [
 const STATE = {
   // Données Sheets (source de vérité)
   missions: [],
-  completions: {},      // { missionId: { status, date } }
+  completions: {},
   user: { id: 'chloe', name: 'Chloé', xp: 0, totalXp: 0, streak: 0, lastActiveDate: null, level: 1, missionsDone: 0, quetesDone: 0 },
   validations: [],
   rewards: [],
-  unlockedBadges: [],   // [{ badgeId, unlockedAt }] depuis Sheets
+  unlockedBadges: [],
   history: [],
   settings: {},
   // Données locales uniquement
@@ -95,6 +95,9 @@ const STATE = {
   currentTab: 'home',
   syncInterval: null,
   syncing: false,
+  syncBlocked: false,
+  recentlyValidated: {},
+  obtainedRewards: [],
 };
 
 /* ══════════════════════════════════════════════════════════════
@@ -595,10 +598,19 @@ function renderBadgesPage() {
 
 function renderRewardsPage() {
   $('#balance-xp').textContent = STATE.user.xp + ' XP';
-  const available = STATE.rewards.filter(r => r.available);
-  const notRedeemed = available.filter(r => !STATE.redeemedRewards[r.id]);
-  const redeemed = available.filter(r => STATE.redeemedRewards[r.id]);
-  $('#rewards-list').innerHTML = [...notRedeemed, ...redeemed].map(r => rewardCardHTML(r)).join('');
+  const obtained = STATE.obtainedRewards || [];
+  const available = STATE.rewards
+    .filter(r => r.available && !obtained.includes(r.id))
+    .sort((a, b) => a.cost - b.cost);
+  const done = STATE.rewards
+    .filter(r => r.available && obtained.includes(r.id))
+    .sort((a, b) => a.cost - b.cost);
+  let html = available.map(rewardCardHTML).join('');
+  if (done.length > 0) {
+    html += '<div class="rewards-separator"><span>✅ Déjà obtenues</span></div>';
+    html += done.map(r => rewardCardObtainedHTML(r)).join('');
+  }
+  $('#rewards-list').innerHTML = html;
   bindRewardCards($('#rewards-list'));
 }
 
@@ -925,22 +937,23 @@ function buyReward(id) {
   const reward = STATE.rewards.find(r => r.id === id);
   if (!reward) return;
   if (STATE.user.xp < reward.cost) { showToast('Pas assez de XP !', 'error'); return; }
-
   showConfirmModal('🎁', 'Obtenir "' + reward.title + '" ?',
-    'Coût : ' + reward.cost + ' XP. Il te restera ' + (STATE.user.xp - reward.cost) + ' XP.', async () => {
-    STATE.user.xp -= reward.cost;
-    saveCache();
-    renderAll();
-    showToast('Profite bien de "' + reward.title + '" ! 🎉', 'success', 4000);
-    const result = await API.redeemReward(STATE.user.id, id);
-    if (!result.ok) {
-      // Annule si erreur
-      STATE.user.xp += reward.cost;
+    'Coût : ' + reward.cost + ' XP. Il te restera ' + (STATE.user.xp - reward.cost) + ' XP.',
+    async () => {
+      STATE.user.xp -= reward.cost;
+      if (!STATE.obtainedRewards) STATE.obtainedRewards = [];
+      STATE.obtainedRewards.push(id);
+      STATE.history.push({ id: uid(), icon: reward.icon || '🎁', title: 'Récompense : ' + reward.title, xp: -reward.cost, date: new Date().toISOString() });
       saveCache();
       renderAll();
-      showToast('Erreur lors de l\'échange.', 'error');
-    }
-  });
+      showToast('Profite bien de "' + reward.title + '" ! 🎉', 'success', 4000);
+      const result = await API.redeemReward(STATE.user.id, id);
+      if (!result.ok) {
+        STATE.user.xp += reward.cost;
+        STATE.obtainedRewards = STATE.obtainedRewards.filter(rid => rid !== id);
+        saveCache(); renderAll(); showToast('Erreur.', 'error');
+      }
+    });
 }
 
 /* ══════════════════════════════════════════════════════════════
