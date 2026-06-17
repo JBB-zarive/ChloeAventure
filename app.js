@@ -535,12 +535,26 @@ function checkAndUnlockBadges() {
       if (b.xpReward && b.xpReward > 0) {
         STATE.user.xp += b.xpReward;
         STATE.user.totalXp += b.xpReward;
-        API.addPoints(STATE.user.id, b.xpReward, 'Badge : ' + b.name).catch(() => {});
+        // Recalcule le niveau avec les XP du badge
+        STATE.user.level = getLevelInfo(STATE.user.xp).level;
       }
       API.unlockBadge(STATE.user.id, b.id).catch(() => {});
     }
   });
-  if (newBadges.length) { saveCache(); setTimeout(() => showBadgeModal(newBadges[0]), 1500); }
+  if (newBadges.length) {
+    saveCache();
+    renderAll();
+    // Synchronise les XP badges vers Sheets en une seule fois
+    const totalBadgeXp = newBadges.reduce((sum, b) => sum + (b.xpReward || 0), 0);
+    if (totalBadgeXp > 0) {
+      API.updateUser(STATE.user.id, {
+        xp: STATE.user.xp,
+        totalXp: STATE.user.totalXp,
+        level: STATE.user.level,
+      }).catch(() => {});
+    }
+    setTimeout(() => showBadgeModal(newBadges[0]), 1500);
+  }
 }
 
 window.doValidate = async function(validationId, approved) {
