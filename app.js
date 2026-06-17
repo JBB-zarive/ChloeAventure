@@ -233,16 +233,34 @@ async function syncFromSheets() {
       (Array.isArray(d.completions) ? d.completions : []).forEach(c => {
         const mission = allMissions.find(m => m.id === c.missionId);
         if (!mission) return;
-        // Reset quotidien : ignore les completions pas d'aujourd'hui
-        if (mission.freq === 'quotidien' && c.date !== todayStr) return;
-        // Reset hebdo : ignore les completions avant lundi de cette semaine
-        if (mission.freq === 'hebdo' && c.date < weekStart) return;
-        // Unique : missions → disparaît le lendemain / quêtes → restent (trophées)
-        const isMission = mission.type === 'mission';
-        if (c.date === todayStr || !isMission) {
+        const freq = mission.freq;
+        const type = mission.type;
+
+        if (freq === 'quotidien') {
+          // Quotidien : valide seulement si c'est aujourd'hui
+          if (c.date === todayStr) {
+            STATE.completions[c.missionId] = { status: c.status || 'done', date: c.date };
+          }
+          // Sinon ignoré (reset quotidien)
+        } else if (freq === 'hebdo') {
+          // Hebdo : valide si dans la semaine courante
+          if (c.date >= weekStart) {
+            STATE.completions[c.missionId] = { status: c.status || 'done', date: c.date };
+          }
+        } else if (freq === 'unique') {
+          if (type === 'quete' || type === 'van') {
+            // Quêtes uniques : toujours visibles (trophées)
+            STATE.completions[c.missionId] = { status: c.status || 'done', date: c.date };
+          } else {
+            // Missions uniques : visibles seulement aujourd'hui
+            if (c.date === todayStr) {
+              STATE.completions[c.missionId] = { status: c.status || 'done', date: c.date };
+            }
+          }
+        } else {
+          // Fréquence inconnue : toujours valide
           STATE.completions[c.missionId] = { status: c.status || 'done', date: c.date };
         }
-        // Missions uniques d'un autre jour → disparaissent de l'affichage
       });
     }
 
