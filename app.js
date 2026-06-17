@@ -213,8 +213,6 @@ async function syncFromSheets() {
     }
 
     const d = result.data;
-    console.log('[sync] completions reçues de Sheets:', JSON.stringify(d.completions));
-    console.log('[sync] validations reçues de Sheets:', JSON.stringify(d.validations));
 
     // Missions
     if (d.missions?.length) {
@@ -838,17 +836,11 @@ window.doValidate = async function(validationId, approved) {
 
   // Trouve la validation dans STATE (ID vient de Sheets via renderAdminValidations)
   const validation = STATE.validations.find(v => v.id === validationId);
-  console.log('[doValidate] validationId:', validationId, 'validation trouvée:', validation);
-
   const result = await API.validateMission(validationId, approved, '', 0);
-  console.log('[doValidate] result:', JSON.stringify(result));
   if (result.ok) {
-    console.log('[doValidate] validation:', validation ? 'trouvée' : 'NON TROUVÉE');
     if (validation) {
       if (approved) {
-        // Mission validée → passe en 'done' immédiatement et de façon permanente
         STATE.completions[validation.missionId] = { status: 'done', date: today() };
-        console.log('[doValidate] completion done pour:', validation.missionId);
         const mission = STATE.missions.find(m => m.id === validation.missionId);
         if (mission) {
           STATE.user.xp       += mission.xp;
