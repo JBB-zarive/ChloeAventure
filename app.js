@@ -847,8 +847,8 @@ window.doValidate = async function(validationId, approved) {
     saveCache();
     renderAll();
     showToast(approved ? 'Mission validée ! ✅' : 'Mission refusée.', approved ? 'success' : 'error');
-    // Resync en arrière-plan pour confirmer
-    syncFromSheets();
+    // Attendre que Sheets ait fini d'écrire avant de resyncer
+    setTimeout(syncFromSheets, 3000);
   } else {
     showToast('Erreur : ' + (result.error || 'Inconnue'), 'error');
   }
