@@ -430,8 +430,10 @@ function isCompletedToday(missionId) {
 function getCompletionStatus(missionId) {
   const comp = STATE.completions[missionId];
   if (!comp) return null;
+  // 'pending' = en attente de validation
   if (comp.status === 'pending') return 'pending';
-  if (isCompletedToday(missionId) || comp.status === 'done') return 'done';
+  // 'done' = accomplie — le filtre de date est géré à la sync, pas ici
+  if (comp.status === 'done') return 'done';
   return null;
 }
 
@@ -687,7 +689,7 @@ function completeMission(id) {
   const mission = STATE.missions.find(m => m.id === id);
   if (!mission) return;
   const status = getCompletionStatus(id);
-  if (status === 'done' || status === 'pending') return;
+  if (status === 'done' || status === 'pending') return; // Déjà accomplie ou en attente
 
   // Mise à jour locale immédiate
   if (mission.validation) {
