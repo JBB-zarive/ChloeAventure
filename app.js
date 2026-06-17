@@ -329,7 +329,10 @@ function renderHomePage() {
       : dailyRemaining.length + ' mission' + (dailyRemaining.length > 1 ? 's' : '') + ' quotidienne' + (dailyRemaining.length > 1 ? 's' : '') + ' restante' + (dailyRemaining.length > 1 ? 's' : '');
     counter.style.color = dailyRemaining.length === 0 ? 'var(--green)' : 'var(--text-secondary)';
   }
-  const todayMissions = STATE.missions.filter(m => m.type === 'mission' && (m.freq === 'quotidien' || m.freq === 'unique') && !m.secret && getCompletionStatus(m.id) !== 'done').slice(0, 3);
+  const todayMissions = STATE.missions
+    .filter(m => m.type === 'mission' && (m.freq === 'quotidien' || m.freq === 'unique') && !m.secret && getCompletionStatus(m.id) !== 'done')
+    .sort((a, b) => a.xp - b.xp)
+    .slice(0, 3);
   const $ml = $('#home-missions-list');
   $ml.innerHTML = todayMissions.length ? todayMissions.map(missionCardHTML).join('') : '<div class="empty-state"><span class="empty-state-icon">🎉</span>Toutes les missions du jour sont faites !</div>';
   bindMissionCards($ml);
@@ -344,7 +347,8 @@ function renderHomePage() {
 
 function renderMissionsPage(filter = 'all') {
   const missions = STATE.missions.filter(m => m.type === 'mission' && !m.secret);
-  const filtered = filter === 'all' ? missions : missions.filter(m => m.cat === filter);
+  const filtered = (filter === 'all' ? missions : missions.filter(m => m.cat === filter))
+    .sort((a, b) => a.xp - b.xp);
   const $list = $('#missions-list');
   $list.innerHTML = filtered.length ? filtered.map(missionCardHTML).join('') : '<div class="empty-state"><span class="empty-state-icon">🎯</span>Aucune mission ici.</div>';
   bindMissionCards($list);
