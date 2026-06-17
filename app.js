@@ -705,10 +705,8 @@ function completeMission(id) {
     showToast('En attente de validation parentale ⏳', 'info');
     saveCache();
     renderAll();
-    // Envoi vers Sheets
-    API.submitValidation(STATE.user.id, id, mission.title, mission.xp).then(() => {
-      syncFromSheets(); // Resync pour avoir l'ID de validation correct
-    }).catch(() => {});
+    // Envoi vers Sheets — pas de resync immédiate pour éviter les doublons
+    API.submitValidation(STATE.user.id, id, mission.title, mission.xp).catch(() => {});
   } else {
     awardMission(id, mission);
   }
