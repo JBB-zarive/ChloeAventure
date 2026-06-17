@@ -807,11 +807,39 @@ function checkAndUnlockBadges() {
 window.doValidate = async function(validationId, approved) {
   showToast(approved ? 'Validation en cours...' : 'Refus en cours...', 'info');
 
+  // Trouve la validation pour connaître la mission concernée
+  const validation = STATE.validations.find(v => v.id === validationId);
+
   const result = await API.validateMission(validationId, approved, '', 0);
   if (result.ok) {
+    // Met à jour localement AVANT la resync
+    if (validation) {
+      if (approved) {
+        // Mission validée → passe en 'done' immédiatement
+        STATE.completions[validation.missionId] = { status: 'done', date: today() };
+        // Crédite les XP localement
+        const mission = STATE.missions.find(m => m.id === validation.missionId);
+        if (mission) {
+          STATE.user.xp += mission.xp;
+          STATE.user.totalXp += mission.xp;
+          STATE.user.missionsDone++;
+          const newLvl = getLevelInfo(STATE.user.xp);
+          const prevLevel = STATE.user.level;
+          STATE.user.level = newLvl.level;
+          if (newLvl.level > prevLevel) setTimeout(() => showLevelUpModal(newLvl), 500);
+        }
+      } else {
+        // Mission refusée → supprime la completion
+        delete STATE.completions[validation.missionId];
+      }
+      // Supprime la validation de la liste locale
+      STATE.validations = STATE.validations.filter(v => v.id !== validationId);
+    }
+    saveCache();
+    renderAll();
     showToast(approved ? 'Mission validée ! ✅' : 'Mission refusée.', approved ? 'success' : 'error');
-    // Resync complète pour avoir l'état à jour
-    await syncFromSheets();
+    // Resync en arrière-plan pour confirmer
+    syncFromSheets();
   } else {
     showToast('Erreur : ' + (result.error || 'Inconnue'), 'error');
   }
