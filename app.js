@@ -273,6 +273,14 @@ function startAutoSync() {
 
 function initApp() {
   loadLocal(); loadCache(); applyTheme(); renderAll(); bindEvents(); initPWA();
+  // Demande permission notifications si pas encore demandé
+  if ('Notification' in window && Notification.permission === 'default') {
+    setTimeout(() => {
+      if (confirm('Activer les notifications pour les badges, quêtes et récompenses ? 🔔')) {
+        requestNotifPermission();
+      }
+    }, 3000); // Attend 3s après le chargement
+  }
   if (!STATE.missions.length && API.getApiUrl()) { syncFromSheets().finally(() => hideSplash()); setTimeout(hideSplash, 6000); }
   else { setTimeout(hideSplash, 2000); startAutoSync(); }
 }
@@ -594,6 +602,7 @@ function buyReward(id) {
     STATE.obtainedRewards.push(id);
     saveCache(); renderAll();
     showToast('Profite bien de "' + reward.title + '" ! 🎉', 'success', 4000);
+      sendLocalNotif('🎁 Récompense obtenue !', reward.title + ' — ' + reward.cost + ' XP dépensés.', 'reward_' + id);
     const result = await API.redeemReward(STATE.user.id, id);
     if (!result.ok) { STATE.user.xp += reward.cost; STATE.obtainedRewards = STATE.obtainedRewards.filter(rid => rid !== id); saveCache(); renderAll(); showToast('Erreur.', 'error'); }
   });
@@ -727,12 +736,16 @@ function showLevelUpModal(lvl) {
   document.getElementById('badge-modal-desc').textContent = 'Tu es maintenant : ' + lvl.name;
   modal.classList.remove('hidden'); launchConfetti('#badge-confetti');
   if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+  // Notification
+  sendLocalNotif(lvl.emoji + ' Niveau ' + lvl.level + ' atteint !', 'Tu es maintenant : ' + lvl.name + ' !', 'levelup_' + lvl.level);
 }
 function showBadgeModal(badge) {
   document.getElementById('badge-modal-icon').textContent = badge.icon;
   document.getElementById('badge-modal-name').textContent = badge.name;
   document.getElementById('badge-modal-desc').textContent = badge.desc + (badge.xpReward ? ' (+' + badge.xpReward + ' XP)' : '');
   document.getElementById('badge-modal').classList.remove('hidden'); launchConfetti('#badge-confetti');
+  // Notification
+  sendLocalNotif('🏆 Badge débloqué : ' + badge.name, badge.desc + (badge.xpReward ? ' +' + badge.xpReward + ' XP !' : ''), 'badge_' + badge.id);
 }
 let confirmCallback = null;
 function showConfirmModal(icon, title, msg, onConfirm) { $('#confirm-icon').textContent = icon; $('#confirm-title').textContent = title; $('#confirm-message').textContent = msg; confirmCallback = onConfirm; $('#confirm-modal').classList.remove('hidden'); }
@@ -744,7 +757,38 @@ function launchConfetti(selector) {
   setTimeout(() => { if(container) container.innerHTML = ''; }, 4000);
 }
 
-function sendLocalNotif(title, body) { if (!('Notification' in window) || Notification.permission !== 'granted') return; try { new Notification(title, { body, icon: 'icons/icon-192.png' }); } catch(e) {} }
+function sendLocalNotif(title, body, tag = '') {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    new Notification(title, {
+      body,
+      icon: 'icons/icon-192.png',
+      badge: 'icons/icon-72.png',
+      tag: tag || title, // évite les doublons
+      silent: false,
+    });
+  } catch(e) {}
+}
+
+async function requestNotifPermission() {
+  if (!('Notification' in window)) { showToast('Notifications non supportées.', 'error'); return; }
+  if (Notification.permission === 'granted') { showToast('Notifications déjà activées ✅', 'success'); return; }
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    showToast('Notifications activées ! 🔔', 'success');
+    sendLocalNotif('🎉 Notifications activées !', 'Tu recevras des alertes pour tes missions et badges.', 'welcome');
+  } else {
+    showToast('Notifications refusées.', 'error');
+  }
+  updateNotifStatus();
+}
+
+function updateNotifStatus() {
+  const el = $('#notif-status');
+  if (!el || !('Notification' in window)) return;
+  const labels = { granted: '✅ Activées', denied: '❌ Refusées', default: '⚪ Non activées' };
+  el.textContent = labels[Notification.permission] || 'Inconnu';
+}
 function initPWA() {
   if (!('serviceWorker' in navigator)) return;
   navigator.serviceWorker.register('service-worker.js').then(reg => {
