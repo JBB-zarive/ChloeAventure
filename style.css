@@ -469,3 +469,42 @@ a { color: inherit; text-decoration: none; }
   gap: 4px;
   padding-top: 2px;
 }
+
+/* ── Badge XP reward ─────────────────────────────────────────── */
+.badge-xp {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--amber);
+  font-family: var(--font-display);
+  margin-top: 3px;
+}
+.badge-card.unlocked .badge-xp { color: var(--green); }
+
+/* ── Séparateur récompenses obtenues ─────────────────────────── */
+.rewards-separator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 10px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.rewards-separator::before,
+.rewards-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Récompense obtenue ───────────────────────────────────────── */
+.reward-obtained {
+  opacity: 0.6;
+  background: color-mix(in srgb, var(--green) 5%, var(--bg-card));
+  border-color: var(--green) !important;
+}
+.reward-check {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}

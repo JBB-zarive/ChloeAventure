@@ -157,9 +157,11 @@ function saveCache() {
       user: STATE.user,
       validations: STATE.validations,
       rewards: STATE.rewards,
+      redeemedRewards: STATE.redeemedRewards,
       unlockedBadges: STATE.unlockedBadges,
       history: STATE.history,
       settings: STATE.settings,
+      obtainedRewards: STATE.obtainedRewards || [],
       cachedAt: new Date().toISOString(),
     }));
   } catch(e) {}
@@ -187,8 +189,10 @@ function loadCache() {
     if (c.unlockedBadges) STATE.unlockedBadges = c.unlockedBadges;
     if (c.history) STATE.history = c.history;
     if (c.settings) STATE.settings = c.settings;
+    if (c.redeemedRewards) STATE.redeemedRewards = c.redeemedRewards;
     // Toujours initialiser recentlyValidated (pas dans le cache)
     if (!STATE.recentlyValidated) STATE.recentlyValidated = {};
+  if (!STATE.obtainedRewards) STATE.obtainedRewards = [];
     return true;
   } catch(e) { return false; }
 }
@@ -299,6 +303,7 @@ async function syncFromSheets() {
           if (existing && existing.status === 'done') return;
           // Ne pas remettre en pending si on vient de valider (< 60s)
           if (!STATE.recentlyValidated) STATE.recentlyValidated = {};
+  if (!STATE.obtainedRewards) STATE.obtainedRewards = [];
           const recentlyValidated = STATE.recentlyValidated[v.missionId];
           if (recentlyValidated && (Date.now() - recentlyValidated) < 60000) return;
           // Seulement si pas encore de completion locale
@@ -309,6 +314,7 @@ async function syncFromSheets() {
       });
       // Nettoie les entrées recentlyValidated > 30s
       if (!STATE.recentlyValidated) STATE.recentlyValidated = {};
+  if (!STATE.obtainedRewards) STATE.obtainedRewards = [];
       Object.keys(STATE.recentlyValidated).forEach(mId => {
         if (Date.now() - STATE.recentlyValidated[mId] > 30000) {
           delete STATE.recentlyValidated[mId];
@@ -589,7 +595,10 @@ function renderBadgesPage() {
 
 function renderRewardsPage() {
   $('#balance-xp').textContent = STATE.user.xp + ' XP';
-  $('#rewards-list').innerHTML = STATE.rewards.filter(r => r.available).map(r => rewardCardHTML(r)).join('');
+  const available = STATE.rewards.filter(r => r.available);
+  const notRedeemed = available.filter(r => !STATE.redeemedRewards[r.id]);
+  const redeemed = available.filter(r => STATE.redeemedRewards[r.id]);
+  $('#rewards-list').innerHTML = [...notRedeemed, ...redeemed].map(r => rewardCardHTML(r)).join('');
   bindRewardCards($('#rewards-list'));
 }
 
@@ -726,6 +735,15 @@ function rewardCardHTML(r) {
     '<button class="reward-buy-btn" data-id="' + r.id + '" ' + (can ? '' : 'disabled') + '>' +
     (can ? 'Obtenir' : 'Il manque ' + (r.cost - STATE.user.xp) + ' XP') +
     '</button></div>';
+}
+
+function rewardCardObtainedHTML(r) {
+  return '<div class="reward-card reward-obtained">' +
+    '<div class="reward-icon-wrap">' + (r.icon || '🎁') + '</div>' +
+    '<div class="reward-body"><div class="reward-title">' + r.title + '</div>' +
+    '<div class="reward-desc">' + (r.desc || '') + '</div>' +
+    '<div class="reward-cost">⚡ ' + r.cost + ' XP</div></div>' +
+    '<div class="reward-check">✅</div></div>';
 }
 
 function rewardMiniHTML(r) {
