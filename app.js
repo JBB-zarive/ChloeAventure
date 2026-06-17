@@ -92,9 +92,15 @@ const LEVELS = [
 ];
 
 const CONGRATS = [
-  'Bravo Chloé ! 🎉', 'Mission accomplie ! ⭐', 'Tu es une vraie aventurière ! 🗺️',
-  'Incroyable ! Continue comme ça ! 🔥', 'Quelle championne ! 🏆', 'Tu assures ! 💪',
-  'Super boulot ! ✨', 'L\'aventure continue ! 🌟', 'Waouh ! 🌟',
+  'Bravo Chloé ! 🎉',
+  'Mission accomplie ! ⭐',
+  'Tu es une vraie aventurière ! 🗺️',
+  'Incroyable ! Continue comme ça ! 🔥',
+  'Quelle championne ! 🏆',
+  'Tu assures ! 💪',
+  'Super boulot ! ✨',
+  'L\'aventure continue ! 🌟',
+  'Waouh ! 🌟',
 ];
 
 const STATE = {
@@ -257,7 +263,20 @@ async function syncFromSheets() {
     }
     if (d.rewards?.length) STATE.rewards = d.rewards.map(r => ({ ...r, cost: Number(r.cost) || 0, available: r.available === true || r.available === 'TRUE' }));
     if (d.badges) STATE.unlockedBadges = Array.isArray(d.badges) ? d.badges : [];
-    if (d.history) STATE.history = Array.isArray(d.history) ? d.history : [];
+    if (d.history) {
+      STATE.history = Array.isArray(d.history) ? d.history : [];
+      // Reconstruit obtainedRewards depuis l'historique Sheets
+      // Une récompense obtenue est dans history avec le titre "Récompense : ..."
+      const rewardTitles = new Set(
+        STATE.history
+          .filter(h => h.title && h.title.startsWith('Récompense : '))
+          .map(h => h.title.replace('Récompense : ', ''))
+      );
+      // Trouve les IDs des récompenses correspondantes
+      STATE.obtainedRewards = STATE.rewards
+        .filter(r => rewardTitles.has(r.title))
+        .map(r => r.id);
+    }
     if (d.settings?.pin) STATE.pin = String(d.settings.pin); else STATE.pin = STATE.pin || '1234';
     saveCache(); renderAll();
     updateSyncStatus('✅ Synchronisé à ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
@@ -495,11 +514,24 @@ function awardMission(id, mission) {
   STATE.user.xp += mission.xp; STATE.user.totalXp += mission.xp;
   if (mission.type === 'quete') STATE.user.quetesDone++; else STATE.user.missionsDone++;
   const t = today();
-  if (STATE.user.lastActiveDate !== t) {
+  // Calcule le streak APRÈS avoir enregistré la completion
+  // Compte les missions quotidiennes accomplies aujourd'hui
+  const dailyDoneToday = STATE.missions.filter(m =>
+    m.freq === 'quotidien' && !m.secret &&
+    STATE.completions[m.id]?.status === 'done' &&
+    STATE.completions[m.id]?.date === t
+  ).length;
+  // Seuil : au moins 3 missions quotidiennes pour valider le jour
+  const STREAK_MIN_MISSIONS = 3;
+  if (dailyDoneToday >= STREAK_MIN_MISSIONS && STATE.user.lastActiveDate !== t) {
     const last = STATE.user.lastActiveDate;
     const diff = last ? Math.floor((new Date(t) - new Date(last)) / 86400000) : 0;
     STATE.user.streak = diff === 1 ? STATE.user.streak + 1 : 1;
     STATE.user.lastActiveDate = t;
+  } else if (STATE.user.lastActiveDate !== t && dailyDoneToday < STREAK_MIN_MISSIONS) {
+    // Pas encore le seuil atteint aujourd'hui — on met à jour lastActiveDate
+    // seulement quand le seuil sera atteint
+    STATE.user.lastActiveDate = STATE.user.lastActiveDate; // inchangé
   }
   const newLvl = getLevelInfo(STATE.user.xp);
   STATE.user.level = newLvl.level;
@@ -509,6 +541,16 @@ function awardMission(id, mission) {
   sendLocalNotif('Mission accomplie ! ⭐', mission.title + ' +' + mission.xp + ' XP');
   API.saveCompletion(STATE.user.id, id, 'done', t).catch(() => {});
   API.addPoints(STATE.user.id, mission.xp, 'Mission : ' + mission.title).catch(() => {});
+  // Sauvegarde le streak et les stats dans Sheets immédiatement
+  API.updateUser(STATE.user.id, {
+    xp:            STATE.user.xp,
+    totalXp:       STATE.user.totalXp,
+    streak:        STATE.user.streak,
+    lastActiveDate: STATE.user.lastActiveDate,
+    level:         STATE.user.level,
+    missionsDone:  STATE.user.missionsDone,
+    quetesDone:    STATE.user.quetesDone,
+  }).catch(() => {});
 }
 
 function checkAndUnlockBadges() {
@@ -647,8 +689,33 @@ async function handleRewardFormSubmit(e) {
 window.doDeleteReward = function(id) { showConfirmModal('🗑️', 'Supprimer ?', 'Irréversible.', async () => { await API.deleteReward(id); showToast('Supprimée.', 'info'); await syncFromSheets(); }); };
 
 async function saveNewPin() { const p = $('#new-pin-input').value.trim(); if (!/^\d{4}$/.test(p)) { showToast('PIN : 4 chiffres requis.', 'error'); return; } STATE.pin = p; saveLocal(); await API.saveSettings({ pin: p }); $('#new-pin-input').value = ''; showToast('PIN mis à jour ✓', 'success'); }
-async function giveBonus() { const pts = parseInt($('#bonus-points-input').value) || 0; const reason = $('#bonus-reason-input').value.trim() || 'Bonus parental'; if (pts <= 0) { showToast('Entrez un nombre valide.', 'error'); return; } const result = await API.addPoints(STATE.user.id, pts, reason); if (result.ok) { showToast('+' + pts + ' XP attribués ! 🌟', 'success'); await syncFromSheets(); } }
-async function deductPoints() { const pts = parseInt($('#deduct-points-input').value) || 0; const reason = $('#deduct-reason-input').value.trim(); if (pts <= 0) { showToast('Entrez un nombre valide.', 'error'); return; } if (!reason) { showToast('La raison est obligatoire.', 'error'); return; } showConfirmModal('⚠️', 'Déduire ' + pts + ' XP ?', reason, async () => { const result = await API.deductPoints(STATE.user.id, pts, reason); if (result.ok) { showToast('-' + pts + ' XP déduits.', 'error'); $('#deduct-points-input').value = ''; $('#deduct-reason-input').value = ''; await syncFromSheets(); } }); }
+async function giveBonus() {
+  const pts    = parseInt($('#bonus-points-input').value) || 0;
+  const reason = $('#bonus-reason-input').value.trim() || 'Bonus parental';
+  if (pts <= 0) { showToast('Entrez un nombre valide.', 'error'); return; }
+  const result = await API.addPoints(STATE.user.id, pts, reason);
+  if (result.ok) {
+    showToast('+' + pts + ' XP attribués ! 🌟', 'success');
+    sendLocalNotif('⭐ Bonus reçu !', '+' + pts + ' XP — ' + reason, 'bonus_' + Date.now());
+    await syncFromSheets();
+  }
+}
+async function deductPoints() {
+  const pts    = parseInt($('#deduct-points-input').value) || 0;
+  const reason = $('#deduct-reason-input').value.trim();
+  if (pts <= 0)  { showToast('Entrez un nombre valide.', 'error'); return; }
+  if (!reason)   { showToast('La raison est obligatoire.', 'error'); return; }
+  showConfirmModal('⚠️', 'Déduire ' + pts + ' XP ?', reason, async () => {
+    const result = await API.deductPoints(STATE.user.id, pts, reason);
+    if (result.ok) {
+      showToast('-' + pts + ' XP déduits.', 'error');
+      sendLocalNotif('⚠️ Points déduits', '-' + pts + ' XP — ' + reason, 'malus_' + Date.now());
+      $('#deduct-points-input').value = '';
+      $('#deduct-reason-input').value = '';
+      await syncFromSheets();
+    }
+  });
+}
 function saveApiUrl() { API.setApiUrl($('#api-url-input').value.trim()); showToast('URL enregistrée ✓', 'success'); if (API.getApiUrl()) syncFromSheets(); }
 async function pushAllToSheets() { showToast('Envoi complet vers Sheets...', 'info'); const result = await API.pushAll({ missions: STATE.missions, rewards: STATE.rewards, user: STATE.user, completions: STATE.completions }); if (result.ok) { showToast('Tout envoyé ! ✅', 'success', 4000); await syncFromSheets(); } else { showToast('Erreur.', 'error'); } }
 function clearAppCache() { showToast('Nettoyage...', 'info', 1500); if ('caches' in window) caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {}); if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister())).catch(() => {}); setTimeout(() => { window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now(); }, 1500); }
