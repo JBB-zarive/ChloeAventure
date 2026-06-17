@@ -187,6 +187,8 @@ function loadCache() {
     if (c.unlockedBadges) STATE.unlockedBadges = c.unlockedBadges;
     if (c.history) STATE.history = c.history;
     if (c.settings) STATE.settings = c.settings;
+    // Toujours initialiser recentlyValidated (pas dans le cache)
+    if (!STATE.recentlyValidated) STATE.recentlyValidated = {};
     return true;
   } catch(e) { return false; }
 }
@@ -296,6 +298,7 @@ async function syncFromSheets() {
           // Ne JAMAIS écraser un 'done' par un 'pending'
           if (existing && existing.status === 'done') return;
           // Ne pas remettre en pending si on vient de valider (< 60s)
+          if (!STATE.recentlyValidated) STATE.recentlyValidated = {};
           const recentlyValidated = STATE.recentlyValidated[v.missionId];
           if (recentlyValidated && (Date.now() - recentlyValidated) < 60000) return;
           // Seulement si pas encore de completion locale
@@ -305,6 +308,7 @@ async function syncFromSheets() {
         }
       });
       // Nettoie les entrées recentlyValidated > 30s
+      if (!STATE.recentlyValidated) STATE.recentlyValidated = {};
       Object.keys(STATE.recentlyValidated).forEach(mId => {
         if (Date.now() - STATE.recentlyValidated[mId] > 30000) {
           delete STATE.recentlyValidated[mId];
