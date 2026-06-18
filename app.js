@@ -870,6 +870,13 @@ function bindEvents() {
   $$('.nav-btn').forEach(btn => btn.addEventListener('click', () => navigateTo(btn.dataset.tab)));
   $$('.see-all-btn').forEach(btn => btn.addEventListener('click', () => navigateTo(btn.dataset.tab)));
   $$('#missions-filter .filter-btn').forEach(btn => { btn.addEventListener('click', () => { $$('#missions-filter .filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderMissionsPage(btn.dataset.filter); }); });
+  // Bouton refresh header
+  $('#refresh-btn')?.addEventListener('click', () => {
+    const btn = $('#refresh-btn');
+    if (btn) { btn.style.animation = 'spin 0.6s linear'; }
+    clearAppCache();
+  });
+
   $('#theme-toggle')?.addEventListener('click', toggleTheme);
   $('#open-pin-btn')?.addEventListener('click', openPinModal);
   $('#pin-cancel')?.addEventListener('click', closePinModal);

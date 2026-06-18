@@ -41,7 +41,7 @@
   </script>
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <title>Chloé Aventure</title>
+  <title>Chloé Aventure v0.9</title>
 </head>
 <body class="theme-light">
 
@@ -125,6 +125,20 @@
       <button class="btn-secondary" id="confirm-cancel">Annuler</button>
       <button class="btn-primary" id="confirm-ok">Confirmer</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL PENDANT TON ABSENCE -->
+<div id="absence-modal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-card absence-card">
+    <div class="absence-header">
+      <div class="absence-emoji">🌟</div>
+      <h2>Pendant ton absence...</h2>
+      <p>Voici ce qui s'est passé !</p>
+    </div>
+    <div id="absence-content" class="absence-body"></div>
+    <button class="btn-primary" id="absence-close" style="margin-top:16px">C'est noté ! 👍</button>
   </div>
 </div>
 
@@ -221,21 +235,6 @@
   </div>
 </div>
 
-<!-- MODAL PENDANT TON ABSENCE -->
-<div id="absence-modal" class="modal hidden">
-  <div class="modal-backdrop"></div>
-  <div class="modal-card absence-card">
-    <div class="absence-header">
-      <div class="absence-emoji">🌟</div>
-      <h2>Pendant ton absence...</h2>
-      <p>Voici ce qui s'est passé !</p>
-    </div>
-    <div id="absence-content" class="absence-body"></div>
-    <button class="btn-primary" id="absence-close" style="margin-top:16px">C'est noté ! 👍</button>
-  </div>
-</div>
-
-  
 <!-- FORMULAIRE RÉCOMPENSE -->
 <div id="reward-form-modal" class="modal hidden">
   <div class="modal-backdrop"></div>
@@ -282,6 +281,7 @@
         <span class="app-name">Chloé Aventure</span>
       </div>
       <div class="header-right">
+        <button class="icon-btn" id="refresh-btn" title="Recharger l'app">🔄</button>
         <button class="icon-btn" id="theme-toggle">🌙</button>
         <div class="xp-pill"><span>⚡</span><span id="header-xp-value">0</span></div>
       </div>
@@ -449,7 +449,8 @@
         </div>
 
         <div id="admin-settings" class="admin-panel">
-           <div class="settings-section">
+
+          <div class="settings-section">
             <h3>🔐 Code PIN</h3>
             <div class="form-group">
               <label>Nouveau code PIN (4 chiffres)</label>
