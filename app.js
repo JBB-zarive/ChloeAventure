@@ -466,6 +466,12 @@ function renderVanPage() {
   const $badges = $('#van-badges-list');
   if (!$badges) return;
 
+  // Force la grille 3 colonnes directement sur l'élément
+  $badges.style.display = 'grid';
+  $badges.style.gridTemplateColumns = 'repeat(3, 1fr)';
+  $badges.style.gap = '10px';
+  $badges.style.overflowX = 'visible';
+
   $badges.innerHTML = VAN_BADGES.map(b => {
     const unlocked = STATE.unlockedBadges.find(ub => ub.badgeId === b.id);
     const isUnlocked = !!unlocked;
