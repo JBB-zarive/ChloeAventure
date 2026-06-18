@@ -458,6 +458,20 @@
             <button class="btn-primary" id="give-bonus-btn">Attribuer</button>
           </div>
           <div class="settings-section">
+            <h3>⚠️ Retirer des points</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label>XP à retirer</label>
+                <input type="number" id="deduct-points-input" value="10" min="1" max="500" />
+              </div>
+              <div class="form-group">
+                <label>Raison <span class="req">*</span></label>
+                <input type="text" id="deduct-reason-input" placeholder="Raison obligatoire" />
+              </div>
+            </div>
+            <button class="btn-danger" style="width:100%;padding:13px" id="deduct-btn">Retirer les points</button>
+          </div>
+          <div class="settings-section">
             <h3>🔄 Synchronisation</h3>
             <p class="settings-desc">URL Google Apps Script :</p>
             <div class="form-group">
