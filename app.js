@@ -376,6 +376,7 @@ function renderHomePage() {
     .filter(m => m.type === 'mission' && (m.freq === 'quotidien' || m.freq === 'unique') && !m.secret && getCompletionStatus(m.id) !== 'done')
     .sort((a, b) => a.xp - b.xp)
     .slice(0, 3);
+  // Note : missions uniques done sont exclues car getCompletionStatus retourne 'done'
   const $ml = $('#home-missions-list');
   $ml.innerHTML = todayMissions.length ? todayMissions.map(missionCardHTML).join('') : '<div class="empty-state"><span class="empty-state-icon">🎉</span>Toutes les missions du jour sont faites !</div>';
   bindMissionCards($ml);
@@ -389,7 +390,12 @@ function renderHomePage() {
 }
 
 function renderMissionsPage(filter = 'all') {
-  const missions = STATE.missions.filter(m => m.type === 'mission' && !m.secret);
+  const missions = STATE.missions.filter(m => {
+    if (m.type !== 'mission' || m.secret) return false;
+    // Missions uniques déjà accomplies → masquées définitivement
+    if (m.freq === 'unique' && getCompletionStatus(m.id) === 'done') return false;
+    return true;
+  });
   const filtered = (filter === 'all' ? missions : missions.filter(m => m.cat === filter))
     .sort((a, b) => a.xp - b.xp);
   const $list = $('#missions-list');
