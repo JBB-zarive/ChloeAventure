@@ -901,7 +901,6 @@ function bindEvents() {
   $('#save-api-btn')?.addEventListener('click', saveApiUrl);
   $('#sync-btn')?.addEventListener('click', async () => { showToast('Synchronisation...', 'info'); await syncFromSheets(); });
   $('#push-btn')?.addEventListener('click', pushAllToSheets);
-  $('#restore-btn')?.addEventListener('click', async () => { showToast('Chargement depuis Sheets...', 'info'); await syncFromSheets(); });
   const clearBtn = document.getElementById('clear-cache-btn');
   if (clearBtn) clearBtn.onclick = clearAppCache;
   $('#api-url-input').value = API.getApiUrl();
