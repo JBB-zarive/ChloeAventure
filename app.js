@@ -313,15 +313,20 @@ function initApp() {
     STATE.user.lastActiveDate = today();
     localStorage.setItem(streakFixKey, '1');
     saveCache();
-    // Synchronise vers Sheets
+    // Écrit dans Sheets d'abord, PUIS lance la sync pour ne pas être écrasé
     API.updateUser(STATE.user.id, {
       streak: STATE.user.streak,
       lastActiveDate: STATE.user.lastActiveDate,
-    }).catch(() => {});
+    }).finally(() => {
+      // La sync relira le bon streak depuis Sheets
+      if (!STATE.missions.length && API.getApiUrl()) { syncFromSheets().finally(() => hideSplash()); setTimeout(hideSplash, 6000); }
+      else { setTimeout(hideSplash, 2000); startAutoSync(); }
+    });
+  } else {
+    // Pas de fix à faire, démarrage normal
+    if (!STATE.missions.length && API.getApiUrl()) { syncFromSheets().finally(() => hideSplash()); setTimeout(hideSplash, 6000); }
+    else { setTimeout(hideSplash, 2000); startAutoSync(); }
   }
-  // Notifications : activées manuellement depuis Paramètres Parents
-  if (!STATE.missions.length && API.getApiUrl()) { syncFromSheets().finally(() => hideSplash()); setTimeout(hideSplash, 6000); }
-  else { setTimeout(hideSplash, 2000); startAutoSync(); }
 }
 function hideSplash() {
   const splash = $('#splash-screen');
