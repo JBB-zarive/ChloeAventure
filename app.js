@@ -38,7 +38,7 @@ const ALL_BADGES = [
   { id: 'xp_10000',      icon: '🌌', name: 'Galaxie XP',           desc: '10000 XP gagnés',              xpReward: 200, condition: { type: 'total_xp', value: 10000 } },
   // ── Niveaux ───────────────────────────────────────────────
   { id: 'level_5',       icon: '🛡️', name: 'Gardienne',            desc: 'Atteindre le niveau 5',        xpReward: 25,  condition: { type: 'level', value: 5  } },
-  { id: 'level_10',      icon: '⚔️', name: 'Maître des quêtes',    desc: 'Atteindre le niveau 10',       xpReward: 50,  condition: { type: 'level', value: 10 } },
+  { id: 'level_10',      icon: '⚔️', name: 'Maîtresse des quêtes', desc: 'Atteindre le niveau 10',       xpReward: 50,  condition: { type: 'level', value: 10 } },
   { id: 'level_15',      icon: '🏆', name: 'Conquérante',          desc: 'Atteindre le niveau 15',       xpReward: 100, condition: { type: 'level', value: 15 } },
   { id: 'level_20',      icon: '👑', name: 'Héroïne Familiale',    desc: 'Atteindre le niveau 20',       xpReward: 150, condition: { type: 'level', value: 20 } },
   { id: 'level_25',      icon: '💫', name: 'Étoile filante',       desc: 'Atteindre le niveau 25',       xpReward: 250, condition: { type: 'level', value: 25 } },
@@ -58,6 +58,15 @@ const ALL_BADGES = [
   { id: 'special_5',     icon: '💥', name: 'Super Spécialiste',    desc: '5 missions Spécial',           xpReward: 50,  condition: { type: 'cat_missions', value: 5,  cat: 'Spécial'    } },
 ];
 
+// Badges exclusifs Mode Van — affichés uniquement dans l'onglet Van
+const VAN_BADGES = [
+  { id: 'van_1',  icon: '🚐', name: 'Vanlife Rookie',      desc: '1ère mission Van accomplie',   xpReward: 15,  condition: { type: 'van_missions', value: 1  } },
+  { id: 'van_3',  icon: '🏕️', name: 'Campeuse',         desc: '3 missions Van accomplies',    xpReward: 30,  condition: { type: 'van_missions', value: 3  } },
+  { id: 'van_5',  icon: '🌄', name: 'Aventurière Van',   desc: '5 missions Van accomplies',    xpReward: 50,  condition: { type: 'van_missions', value: 5  } },
+  { id: 'van_10', icon: '🗺️', name: 'Nomade confirmée',  desc: '10 missions Van accomplies',   xpReward: 100, condition: { type: 'van_missions', value: 10 } },
+  { id: 'van_15', icon: '🌟', name: 'Légende du Van',      desc: '15 missions Van accomplies !', xpReward: 200, condition: { type: 'van_missions', value: 15 } },
+];
+
 const LEVELS = [
   { level:  1, name: 'Exploratrice',            min: 0,     max: 100,    emoji: '🌱' },
   { level:  2, name: 'Aventurière',             min: 100,   max: 250,    emoji: '🧭' },
@@ -68,7 +77,7 @@ const LEVELS = [
   { level:  7, name: 'Aventurière confirmée',   min: 1400,  max: 1900,   emoji: '⛺' },
   { level:  8, name: 'Protectrice nature',      min: 1900,  max: 2500,   emoji: '🌿' },
   { level:  9, name: 'Aventurière stellaire',   min: 2500,  max: 3200,   emoji: '🌟' },
-  { level: 10, name: 'Maître des quêtes',       min: 3200,  max: 4000,   emoji: '⚔️' },
+  { level: 10, name: 'Maîtresse des quêtes',       min: 3200,  max: 4000,   emoji: '⚔️' },
   { level: 11, name: 'Gardienne des étoiles',   min: 4000,  max: 4950,   emoji: '🔭' },
   { level: 12, name: 'Exploratrice légendaire', min: 4950,  max: 6050,   emoji: '🏕️' },
   { level: 13, name: 'Chercheuse de trésors',   min: 6050,  max: 7300,   emoji: '💎' },
@@ -423,16 +432,41 @@ function renderRewardsPage() {
 }
 
 function renderVanPage() {
+  // Missions Van
   const vanMissions = STATE.missions.filter(m => m.type === 'van' || m.cat === 'Van');
   const $list = $('#van-missions-list');
-  if (!$list) return;
-  $list.innerHTML = vanMissions.length
-    ? vanMissions.sort((a, b) => a.xp - b.xp).map(missionCardHTML).join('')
-    : '<div class="empty-state"><span class="empty-state-icon">🚐</span>Aucune mission Van.</div>';
-  bindMissionCards($list);
-  const vanBadges = getBadgesWithStatus().filter(b => b.unlocked && b.id.startsWith('van'));
+  if ($list) {
+    $list.innerHTML = vanMissions.length
+      ? vanMissions.sort((a, b) => a.xp - b.xp).map(missionCardHTML).join('')
+      : '<div class="empty-state"><span class="empty-state-icon">🚐</span>Aucune mission Van.</div>';
+    bindMissionCards($list);
+  }
+
+  // Badges Van exclusifs
+  const vanDone = vanMissions.filter(m => getCompletionStatus(m.id) === 'done').length;
   const $badges = $('#van-badges-list');
-  if ($badges) $badges.innerHTML = vanBadges.map(badgeMiniHTML).join('');
+  if (!$badges) return;
+
+  $badges.innerHTML = VAN_BADGES.map(b => {
+    const unlocked = STATE.unlockedBadges.find(ub => ub.badgeId === b.id);
+    const isUnlocked = !!unlocked;
+    const xpColor = isUnlocked ? 'var(--green)' : 'var(--amber)';
+    return '<div class="badge-card ' + (isUnlocked ? 'unlocked' : 'locked') + '">' +
+      '<span class="badge-icon">' + b.icon + '</span>' +
+      '<div class="badge-name">' + b.name + '</div>' +
+      '<div class="badge-desc">' + (isUnlocked
+        ? '✅ ' + (unlocked.unlockedAt ? formatDate(unlocked.unlockedAt) : 'Débloqué')
+        : b.desc) + '</div>' +
+      '<div class="badge-xp" style="color:' + xpColor + '">+' + b.xpReward + ' XP</div>' +
+      '</div>';
+  }).join('');
+
+  // Progression Van
+  const unlockedCount = VAN_BADGES.filter(b => STATE.unlockedBadges.find(ub => ub.badgeId === b.id)).length;
+  const $vanProgress = $('#van-badges-progress');
+  if ($vanProgress) {
+    $vanProgress.textContent = unlockedCount + ' / ' + VAN_BADGES.length + ' badges Van débloqués · ' + vanDone + ' mission' + (vanDone > 1 ? 's' : '') + ' Van accomplie' + (vanDone > 1 ? 's' : '');
+  }
 }
 
 function renderAdminMissions() {
@@ -604,9 +638,12 @@ function checkAndUnlockBadges() {
   const levelInfo = getLevelInfo(u.xp);
   const alreadyUnlocked = STATE.unlockedBadges.map(b => b.badgeId);
   const newBadges = [];
-  ALL_BADGES.forEach(b => {
+  // Vérifie ALL_BADGES + VAN_BADGES
+  const allBadgesToCheck = [...ALL_BADGES, ...VAN_BADGES];
+  allBadgesToCheck.forEach(b => {
     if (alreadyUnlocked.includes(b.id)) return;
     const c = b.condition; let earned = false;
+    const vanDoneCount = doneMissions.filter(m => m.type === 'van' || m.cat === 'Van').length;
     switch (c.type) {
       case 'missions_total': earned = u.missionsDone >= c.value; break;
       case 'quetes_total':   earned = u.quetesDone >= c.value; break;
@@ -614,6 +651,7 @@ function checkAndUnlockBadges() {
       case 'total_xp':       earned = u.totalXp >= c.value; break;
       case 'level':          earned = levelInfo.level >= c.value; break;
       case 'cat_missions':   earned = doneMissions.filter(m => m.cat === c.cat).length >= c.value; break;
+      case 'van_missions':   earned = vanDoneCount >= c.value; break;
     }
     if (earned) {
       const unlockedAt = new Date().toISOString();
