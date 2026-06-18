@@ -63,6 +63,7 @@ const VAN_BADGES = [
   { id: 'van_1',  icon: '🚐', name: 'Vanlife Rookie',      desc: '1ère mission Van accomplie',   xpReward: 15,  condition: { type: 'van_missions', value: 1  } },
   { id: 'van_3',  icon: '🏕️', name: 'Campeuse',         desc: '3 missions Van accomplies',    xpReward: 30,  condition: { type: 'van_missions', value: 3  } },
   { id: 'van_5',  icon: '🌄', name: 'Aventurière Van',   desc: '5 missions Van accomplies',    xpReward: 50,  condition: { type: 'van_missions', value: 5  } },
+  { id: 'van_7',  icon: '🌅', name: 'Exploratrice Van',  desc: '7 missions Van accomplies',    xpReward: 75,  condition: { type: 'van_missions', value: 7  } },
   { id: 'van_10', icon: '🗺️', name: 'Nomade confirmée',  desc: '10 missions Van accomplies',   xpReward: 100, condition: { type: 'van_missions', value: 10 } },
   { id: 'van_15', icon: '🌟', name: 'Légende du Van',      desc: '15 missions Van accomplies !', xpReward: 200, condition: { type: 'van_missions', value: 15 } },
 ];
