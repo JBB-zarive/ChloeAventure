@@ -188,20 +188,9 @@
           </select>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Difficulté</label>
-          <select id="mission-diff-input">
-            <option value="facile">🟢 Facile</option>
-            <option value="moyen">🟡 Moyen</option>
-            <option value="difficile">🔴 Difficile</option>
-            <option value="epique">💜 Épique</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Points XP</label>
-          <input type="number" id="mission-points-input" value="20" min="5" max="500" />
-        </div>
+      <div class="form-group">
+        <label>Points XP</label>
+        <input type="number" id="mission-points-input" value="20" min="5" max="500" />
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -222,10 +211,7 @@
           <input type="checkbox" id="mission-validation-input" checked />
           <label for="mission-validation-input">Validation parentale requise</label>
         </div>
-        <div class="form-check">
-          <input type="checkbox" id="mission-secret-input" />
-          <label for="mission-secret-input">🔒 Quête secrète (cachée jusqu'au déblocage)</label>
-        </div>
+
       </div>
       <div class="modal-actions">
         <button type="button" class="btn-secondary" id="mission-form-cancel">Annuler</button>
@@ -356,8 +342,7 @@
         <div class="quete-sections">
           <h3 class="section-title">⚡ Quêtes actives</h3>
           <div id="quetes-active-list" class="missions-grid"></div>
-          <h3 class="section-title" style="margin-top:20px">🔒 Quêtes secrètes</h3>
-          <div id="quetes-secret-list" class="missions-grid"></div>
+
           <h3 class="section-title" style="margin-top:20px">✅ Quêtes accomplies</h3>
           <div id="quetes-done-list" class="missions-grid"></div>
         </div>
