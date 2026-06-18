@@ -297,7 +297,11 @@ async function syncFromSheets() {
 function updateSyncStatus(msg) { const el = $('#sync-status'); if (el) el.textContent = msg; }
 function startAutoSync() {
   if (API.getApiUrl() && !API.getApiUrl().includes('VOTRE')) {
-    syncFromSheets().then(() => checkAbsenceNews()).catch(() => {});
+    syncFromSheets().then(() => {
+      // Attend que le rendu soit terminé avant de vérifier les absences
+      // STATE.history est maintenant garanti d'être chargé
+      setTimeout(() => checkAbsenceNews(), 500);
+    }).catch(() => {});
   }
   STATE.syncInterval = setInterval(() => { if (API.getApiUrl() && document.visibilityState !== 'hidden' && !STATE.syncBlocked) syncFromSheets(); }, 60000);
 }
@@ -399,8 +403,6 @@ function renderQuetesPage() {
   const active = quetes.filter(m => getCompletionStatus(m.id) !== 'done');
   $('#quetes-active-list').innerHTML = active.length ? active.map(missionCardHTML).join('') : '<div class="empty-state">Aucune quête active.</div>';
   bindMissionCards($('#quetes-active-list'));
-  const doneSection = $('#quetes-done-section');
-  if (doneSection) doneSection.style.display = done.length ? 'block' : 'none';
   $('#quetes-done-list').innerHTML = done.map(missionCardHTML).join('');
   bindMissionCards($('#quetes-done-list'));
 }
@@ -494,10 +496,7 @@ function renderVanPage() {
 
   // Progression Van
   const unlockedCount = VAN_BADGES.filter(b => STATE.unlockedBadges.find(ub => ub.badgeId === b.id)).length;
-  const $vanProgress = $('#van-badges-progress');
-  if ($vanProgress) {
-    $vanProgress.textContent = unlockedCount + ' / ' + VAN_BADGES.length + ' badges Van débloqués · ' + vanDone + ' mission' + (vanDone > 1 ? 's' : '') + ' Van accomplie' + (vanDone > 1 ? 's' : '');
-  }
+
 }
 
 function renderAdminMissions() {
@@ -786,7 +785,7 @@ function openMissionForm(id = null, defaultType = 'mission') {
 window.openEditMission = openMissionForm;
 async function handleMissionFormSubmit(e) {
   e.preventDefault();
-  const mission = { id: editingMissionId || uid(), icon: $('#mission-icon-input').value.trim() || '🎯', title: $('#mission-title-input').value.trim(), desc: $('#mission-desc-input').value.trim(), type: $('#mission-type-input').value, cat: $('#mission-cat-input').value, xp: parseInt($('#mission-points-input').value) || 20, freq: $('#mission-freq-input').value, due: $('#mission-due-input').value || '', validation: $('#mission-validation-input').checked, secret: $('#mission-secret-input').checked };
+  const mission = { id: editingMissionId || uid(), icon: $('#mission-icon-input').value.trim() || '🎯', title: $('#mission-title-input').value.trim(), desc: $('#mission-desc-input').value.trim(), type: $('#mission-type-input').value, cat: $('#mission-cat-input').value, xp: parseInt($('#mission-points-input').value) || 20, freq: $('#mission-freq-input').value, due: $('#mission-due-input').value || '', validation: $('#mission-validation-input').checked, secret: false };
   const result = editingMissionId ? await API.updateMission(editingMissionId, mission) : await API.createMission(mission);
   if (result.ok !== false) { showToast(editingMissionId ? 'Modifié ✓' : (mission.type === 'quete' ? 'Quête créée ! 🗺️' : 'Mission créée ! 🎯'), 'success'); $('#mission-form-modal').classList.add('hidden'); editingMissionId = null; await syncFromSheets(); }
   else { showToast('Erreur : ' + (result.error || 'Inconnue'), 'error'); }
