@@ -1,5 +1,5 @@
 /**
- * app.js – Chloé Aventure v7
+ * app.js – Chloé Aventure v0.8
  * Architecture : Sheets = Source unique de vérité
  */
 
@@ -167,8 +167,8 @@ function showToast(msg, type = 'info', duration = 3000) {
   setTimeout(() => { t.classList.add('fade-out'); setTimeout(() => t.remove(), 300); }, duration);
 }
 
-const CACHE_KEY = 'chloe_v7_cache';
-const LOCAL_KEY = 'chloe_v7_local';
+const CACHE_KEY = 'chloe_v8_cache';
+const LOCAL_KEY = 'chloe_v8_local';
 
 function saveCache() {
   try {
@@ -233,7 +233,7 @@ async function syncFromSheets() {
         } else if (freq === 'hebdo') {
           if (c.date >= weekStart) STATE.completions[c.missionId] = { status: c.status || 'done', date: c.date };
         } else if (freq === 'unique') {
-          if (type === 'quete') STATE.completions[c.missionId] = { status: c.status || 'done', date: c.date };
+          if (type === 'quete' || type === 'van') STATE.completions[c.missionId] = { status: c.status || 'done', date: c.date };
           else if (c.date === todayStr) STATE.completions[c.missionId] = { status: c.status || 'done', date: c.date };
         } else {
           STATE.completions[c.missionId] = { status: c.status || 'done', date: c.date };
@@ -290,8 +290,13 @@ function startAutoSync() {
   STATE.syncInterval = setInterval(() => { if (API.getApiUrl() && document.visibilityState !== 'hidden' && !STATE.syncBlocked) syncFromSheets(); }, 60000);
 }
 
+const APP_VERSION = 'v0.8';
+
 function initApp() {
   loadLocal(); loadCache(); applyTheme(); renderAll(); bindEvents(); initPWA();
+  // Affiche la version sur l'écran de chargement
+  const versionEl = document.getElementById('splash-version');
+  if (versionEl) versionEl.textContent = APP_VERSION;
   // Notifications : activées manuellement depuis Paramètres Parents
   if (!STATE.missions.length && API.getApiUrl()) { syncFromSheets().finally(() => hideSplash()); setTimeout(hideSplash, 6000); }
   else { setTimeout(hideSplash, 2000); startAutoSync(); }
@@ -305,7 +310,7 @@ function hideSplash() {
 
 function renderAll() {
   renderHero(); renderHomePage(); renderMissionsPage(); renderQuetesPage();
-  renderBadgesPage(); renderRewardsPage();
+  renderBadgesPage(); renderRewardsPage(); renderVanPage();
   if (STATE.parentsAuth) { renderAdminMissions(); renderAdminQuetes(); renderAdminRewards(); renderAdminValidations(); renderAdminHistory(); }
 }
 
@@ -417,12 +422,25 @@ function renderRewardsPage() {
   bindRewardCards($('#rewards-list'));
 }
 
+function renderVanPage() {
+  const vanMissions = STATE.missions.filter(m => m.type === 'van' || m.cat === 'Van');
+  const $list = $('#van-missions-list');
+  if (!$list) return;
+  $list.innerHTML = vanMissions.length
+    ? vanMissions.sort((a, b) => a.xp - b.xp).map(missionCardHTML).join('')
+    : '<div class="empty-state"><span class="empty-state-icon">🚐</span>Aucune mission Van.</div>';
+  bindMissionCards($list);
+  const vanBadges = getBadgesWithStatus().filter(b => b.unlocked && b.id.startsWith('van'));
+  const $badges = $('#van-badges-list');
+  if ($badges) $badges.innerHTML = vanBadges.map(badgeMiniHTML).join('');
+}
+
 function renderAdminMissions() {
   const missions = STATE.missions.filter(m => m.type === 'mission');
   $('#admin-missions-list').innerHTML = missions.length ? missions.map(adminItemHTML).join('') : '<div class="empty-state">Aucune mission.</div>';
 }
 function renderAdminQuetes() {
-  const quetes = STATE.missions.filter(m => m.type === 'quete');
+  const quetes = STATE.missions.filter(m => m.type === 'quete' || m.type === 'van');
   $('#admin-quetes-list').innerHTML = quetes.length ? quetes.map(adminItemHTML).join('') : '<div class="empty-state">Aucune quête.</div>';
 }
 function renderAdminValidations() {
@@ -475,13 +493,14 @@ function missionCardHTML(m) {
     '<div class="mission-body"><div class="mission-title">' + m.title + '</div>' +
     (m.desc ? '<div class="mission-desc">' + m.desc + '</div>' : '') +
     '<div class="mission-meta"><span class="mission-tag ' + (isQuete ? 'quete-tag' : '') + '">' + (isQuete ? '🗺️ Quête' : m.cat) + '</span>' +
+    (m.type === 'van' ? '<span class="mission-tag">🚐</span>' : '') +
     (m.freq === 'quotidien' ? '<span class="mission-tag">🔁</span>' : m.freq === 'hebdo' ? '<span class="mission-tag">📆</span>' : '') +
     '<span class="mission-xp">+' + m.xp + ' XP</span>' + dueLine + '</div></div>' +
     '<div class="mission-action"><button class="complete-btn ' + (isDone ? 'done-btn' : isPending ? 'pending-btn' : '') + '" data-id="' + m.id + '" ' + (isDone || isPending ? 'disabled' : '') + '>' +
     (isDone ? '✓' : isPending ? '⏳' : '○') + '</button></div></div>';
 }
 function adminItemHTML(m) {
-  const typeLabel = m.type === 'quete' ? '🗺️ Quête' : '🎯 Mission';
+  const typeLabel = m.type === 'quete' ? '🗺️ Quête' : m.type === 'van' ? '🚐 Van' : '🎯 Mission';
   return '<div class="admin-item"><span style="font-size:1.3rem">' + (m.icon || '🎯') + '</span>' +
     '<div class="admin-item-info"><div class="admin-item-title">' + m.title + '</div>' +
     '<div class="admin-item-meta">' + typeLabel + ' · ' + m.xp + ' XP · ' + m.freq + (m.secret ? ' · 🔒' : '') + (m.due ? ' · 📅 ' + formatDate(m.due) : '') + '</div></div>' +
@@ -529,25 +548,29 @@ function awardMission(id, mission) {
   STATE.user.xp += mission.xp; STATE.user.totalXp += mission.xp;
   if (mission.type === 'quete') STATE.user.quetesDone++; else STATE.user.missionsDone++;
   const t = today();
-  // Calcule le streak APRÈS avoir enregistré la completion
   // Compte les missions quotidiennes accomplies aujourd'hui
+  // (inclut celle qu'on vient d'enregistrer juste au-dessus)
   const dailyDoneToday = STATE.missions.filter(m =>
     m.freq === 'quotidien' && !m.secret &&
     STATE.completions[m.id]?.status === 'done' &&
     STATE.completions[m.id]?.date === t
   ).length;
-  // Seuil : au moins 3 missions quotidiennes pour valider le jour
+
   const STREAK_MIN_MISSIONS = 3;
-  if (dailyDoneToday >= STREAK_MIN_MISSIONS && STATE.user.lastActiveDate !== t) {
-    const last = STATE.user.lastActiveDate;
-    const diff = last ? Math.floor((new Date(t) - new Date(last)) / 86400000) : 0;
-    STATE.user.streak = diff === 1 ? STATE.user.streak + 1 : 1;
-    STATE.user.lastActiveDate = t;
-  } else if (STATE.user.lastActiveDate !== t && dailyDoneToday < STREAK_MIN_MISSIONS) {
-    // Pas encore le seuil atteint aujourd'hui — on met à jour lastActiveDate
-    // seulement quand le seuil sera atteint
-    STATE.user.lastActiveDate = STATE.user.lastActiveDate; // inchangé
+
+  // Le jour est validé si on atteint le seuil
+  if (dailyDoneToday >= STREAK_MIN_MISSIONS) {
+    // N'incrémente le streak qu'une seule fois par jour
+    if (STATE.user.lastActiveDate !== t) {
+      const last = STATE.user.lastActiveDate;
+      // Vérifie si c'était bien hier (ou premier jour)
+      const diff = last ? Math.floor((new Date(t) - new Date(last)) / 86400000) : 0;
+      STATE.user.streak = diff === 1 ? STATE.user.streak + 1 : diff === 0 ? STATE.user.streak : 1;
+      STATE.user.lastActiveDate = t;
+    }
+    // Si lastActiveDate === t : streak déjà compté aujourd'hui, on ne fait rien
   }
+  // Si seuil pas encore atteint : on ne touche pas au streak
   const newLvl = getLevelInfo(STATE.user.xp);
   STATE.user.level = newLvl.level;
   saveCache(); renderAll(); showSuccessModal(mission);
@@ -556,16 +579,23 @@ function awardMission(id, mission) {
   sendLocalNotif('Mission accomplie ! ⭐', mission.title + ' +' + mission.xp + ' XP');
   API.saveCompletion(STATE.user.id, id, 'done', t).catch(() => {});
   API.addPoints(STATE.user.id, mission.xp, 'Mission : ' + mission.title).catch(() => {});
-  // Sauvegarde le streak et les stats dans Sheets immédiatement
+  // Sauvegarde tout dans Sheets immédiatement
+  // Bloque la sync auto 10s pour que Sheets ait le temps d'écrire le streak
+  STATE.syncBlocked = true;
   API.updateUser(STATE.user.id, {
-    xp:            STATE.user.xp,
-    totalXp:       STATE.user.totalXp,
-    streak:        STATE.user.streak,
+    xp:             STATE.user.xp,
+    totalXp:        STATE.user.totalXp,
+    streak:         STATE.user.streak,
     lastActiveDate: STATE.user.lastActiveDate,
-    level:         STATE.user.level,
-    missionsDone:  STATE.user.missionsDone,
-    quetesDone:    STATE.user.quetesDone,
-  }).catch(() => {});
+    level:          STATE.user.level,
+    missionsDone:   STATE.user.missionsDone,
+    quetesDone:     STATE.user.quetesDone,
+  }).then(() => {
+    // Sheets a écrit → on peut resyncer sans risque d'écrasement
+    STATE.syncBlocked = false;
+  }).catch(() => {
+    STATE.syncBlocked = false;
+  });
 }
 
 function checkAndUnlockBadges() {
@@ -737,7 +767,7 @@ function clearAppCache() { showToast('Nettoyage...', 'info', 1500); if ('caches'
 
 function navigateTo(tab) {
   STATE.currentTab = tab; $$('.page').forEach(p => p.classList.remove('active')); $$('.nav-btn').forEach(b => b.classList.remove('active'));
-  const pageMap = { home:'home', missions:'missions', quetes:'quetes', badges:'badges', rewards:'rewards', parents:'parents' };
+  const pageMap = { home:'home', missions:'missions', quetes:'quetes', badges:'badges', rewards:'rewards', van:'van', parents:'parents' };
   $('#page-' + (pageMap[tab] || tab))?.classList.add('active'); $('.nav-btn[data-tab="' + tab + '"]')?.classList.add('active');
   if (tab === 'parents') { STATE.parentsAuth ? showParentsContent() : showParentsLocked(); }
 }
