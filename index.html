@@ -221,6 +221,21 @@
   </div>
 </div>
 
+<!-- MODAL PENDANT TON ABSENCE -->
+<div id="absence-modal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-card absence-card">
+    <div class="absence-header">
+      <div class="absence-emoji">🌟</div>
+      <h2>Pendant ton absence...</h2>
+      <p>Voici ce qui s'est passé !</p>
+    </div>
+    <div id="absence-content" class="absence-body"></div>
+    <button class="btn-primary" id="absence-close" style="margin-top:16px">C'est noté ! 👍</button>
+  </div>
+</div>
+
+  
 <!-- FORMULAIRE RÉCOMPENSE -->
 <div id="reward-form-modal" class="modal hidden">
   <div class="modal-backdrop"></div>
@@ -434,17 +449,7 @@
         </div>
 
         <div id="admin-settings" class="admin-panel">
-          <div class="settings-section">
-            <h3>🔔 Notifications</h3>
-            <button class="btn-primary" id="enable-notif-btn">Activer les notifications</button>
-            <p class="settings-desc" id="notif-status" style="margin-top:8px">Statut : non activées</p>
-            <div class="form-group" style="margin-top:12px">
-              <label>Heure du rappel quotidien</label>
-              <input type="time" id="notif-time-input" value="09:00" />
-            </div>
-            <button class="btn-secondary" style="margin-top:8px" id="save-notif-btn">Enregistrer l'heure</button>
-          </div>
-          <div class="settings-section">
+           <div class="settings-section">
             <h3>🔐 Code PIN</h3>
             <div class="form-group">
               <label>Nouveau code PIN (4 chiffres)</label>
