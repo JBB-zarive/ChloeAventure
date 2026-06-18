@@ -1,5 +1,5 @@
 /**
- * app.js – Chloé Aventure v0.8
+ * app.js – Chloé Aventure v0.9
  * Architecture : Sheets = Source unique de vérité
  */
 
@@ -177,8 +177,8 @@ function showToast(msg, type = 'info', duration = 3000) {
   setTimeout(() => { t.classList.add('fade-out'); setTimeout(() => t.remove(), 300); }, duration);
 }
 
-const CACHE_KEY = 'chloe_v8_cache';
-const LOCAL_KEY = 'chloe_v8_local';
+const CACHE_KEY = 'chloe_v9_cache';
+const LOCAL_KEY = 'chloe_v9_local';
 
 function saveCache() {
   try {
@@ -296,11 +296,13 @@ async function syncFromSheets() {
 }
 function updateSyncStatus(msg) { const el = $('#sync-status'); if (el) el.textContent = msg; }
 function startAutoSync() {
-  if (API.getApiUrl() && !API.getApiUrl().includes('VOTRE')) syncFromSheets();
+  if (API.getApiUrl() && !API.getApiUrl().includes('VOTRE')) {
+    syncFromSheets().then(() => checkAbsenceNews()).catch(() => {});
+  }
   STATE.syncInterval = setInterval(() => { if (API.getApiUrl() && document.visibilityState !== 'hidden' && !STATE.syncBlocked) syncFromSheets(); }, 60000);
 }
 
-const APP_VERSION = 'v0.8';
+const APP_VERSION = 'v0.9';
 
 function initApp() {
   loadLocal(); loadCache(); applyTheme(); renderAll(); bindEvents(); initPWA();
@@ -333,7 +335,11 @@ function hideSplash() {
   const splash = $('#splash-screen');
   if (!splash || splash.classList.contains('hidden')) return;
   splash.classList.add('fade-out');
-  setTimeout(() => { splash.classList.add('hidden'); $('#app').classList.remove('hidden'); startAutoSync(); }, 600);
+  setTimeout(() => {
+    splash.classList.add('hidden');
+    $('#app').classList.remove('hidden');
+    startAutoSync();
+  }, 600);
 }
 
 function renderAll() {
@@ -646,7 +652,6 @@ function awardMission(id, mission) {
   saveCache(); renderAll(); showSuccessModal(mission);
   checkAndUnlockBadges();
   if (newLvl.level > prevLevel) setTimeout(() => showLevelUpModal(newLvl), 1800);
-  sendLocalNotif('Mission accomplie ! ⭐', mission.title + ' +' + mission.xp + ' XP');
   API.saveCompletion(STATE.user.id, id, 'done', t).catch(() => {});
   API.addPoints(STATE.user.id, mission.xp, 'Mission : ' + mission.title).catch(() => {});
   // Sauvegarde tout dans Sheets immédiatement
@@ -756,7 +761,6 @@ function buyReward(id) {
     STATE.obtainedRewards.push(id);
     saveCache(); renderAll();
     showToast('Profite bien de "' + reward.title + '" ! 🎉', 'success', 4000);
-      sendLocalNotif('🎁 Récompense obtenue !', reward.title + ' — ' + reward.cost + ' XP dépensés.', 'reward_' + id);
     const result = await API.redeemReward(STATE.user.id, id);
     if (!result.ok) { STATE.user.xp += reward.cost; STATE.obtainedRewards = STATE.obtainedRewards.filter(rid => rid !== id); saveCache(); renderAll(); showToast('Erreur.', 'error'); }
   });
@@ -815,7 +819,6 @@ async function giveBonus() {
   const result = await API.addPoints(STATE.user.id, pts, reason);
   if (result.ok) {
     showToast('+' + pts + ' XP attribués ! 🌟', 'success');
-    sendLocalNotif('⭐ Bonus reçu !', '+' + pts + ' XP — ' + reason, 'bonus_' + Date.now());
     await syncFromSheets();
   }
 }
@@ -828,7 +831,6 @@ async function deductPoints() {
     const result = await API.deductPoints(STATE.user.id, pts, reason);
     if (result.ok) {
       showToast('-' + pts + ' XP déduits.', 'error');
-      sendLocalNotif('⚠️ Points déduits', '-' + pts + ' XP — ' + reason, 'malus_' + Date.now());
       $('#deduct-points-input').value = '';
       $('#deduct-reason-input').value = '';
       await syncFromSheets();
@@ -898,9 +900,11 @@ function bindEvents() {
   $('#api-url-input').value = API.getApiUrl();
   $$('.emoji-input').forEach(input => input.addEventListener('focus', () => input.select()));
 
-  // Notifications
-  $('#enable-notif-btn')?.addEventListener('click', requestNotifPermission);
-  updateNotifStatus();
+  // Modal absence
+  document.getElementById('absence-close')?.addEventListener('click', () => {
+    document.getElementById('absence-modal').classList.add('hidden');
+  });
+
 }
 function bindMissionCards(ctx) { $$('.complete-btn', ctx).forEach(btn => { btn.addEventListener('click', e => { e.stopPropagation(); completeMission(btn.dataset.id); }); }); }
 function bindRewardCards(ctx) { $$('.reward-buy-btn', ctx).forEach(btn => btn.addEventListener('click', () => buyReward(btn.dataset.id))); }
@@ -919,16 +923,12 @@ function showLevelUpModal(lvl) {
   document.getElementById('badge-modal-desc').textContent = 'Tu es maintenant : ' + lvl.name;
   modal.classList.remove('hidden'); launchConfetti('#badge-confetti');
   if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
-  // Notification
-  sendLocalNotif(lvl.emoji + ' Niveau ' + lvl.level + ' atteint !', 'Tu es maintenant : ' + lvl.name + ' !', 'levelup_' + lvl.level);
 }
 function showBadgeModal(badge) {
   document.getElementById('badge-modal-icon').textContent = badge.icon;
   document.getElementById('badge-modal-name').textContent = badge.name;
   document.getElementById('badge-modal-desc').textContent = badge.desc + (badge.xpReward ? ' (+' + badge.xpReward + ' XP)' : '');
   document.getElementById('badge-modal').classList.remove('hidden'); launchConfetti('#badge-confetti');
-  // Notification
-  sendLocalNotif('🏆 Badge débloqué : ' + badge.name, badge.desc + (badge.xpReward ? ' +' + badge.xpReward + ' XP !' : ''), 'badge_' + badge.id);
 }
 let confirmCallback = null;
 function showConfirmModal(icon, title, msg, onConfirm) { $('#confirm-icon').textContent = icon; $('#confirm-title').textContent = title; $('#confirm-message').textContent = msg; confirmCallback = onConfirm; $('#confirm-modal').classList.remove('hidden'); }
@@ -940,50 +940,92 @@ function launchConfetti(selector) {
   setTimeout(() => { if(container) container.innerHTML = ''; }, 4000);
 }
 
-function sendLocalNotif(title, body, tag = '') {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  try {
-    new Notification(title, {
-      body,
-      icon: 'icons/icon-192.png',
-      badge: 'icons/icon-72.png',
-      tag: tag || title, // évite les doublons
-      silent: false,
+
+/* ══════════════════════════════════════════════════════════════
+   MODAL "PENDANT TON ABSENCE"
+══════════════════════════════════════════════════════════════ */
+function checkAbsenceNews() {
+  const lastSeen = localStorage.getItem('chloe_last_seen');
+  const now = new Date().toISOString();
+
+  // Met à jour le timestamp de dernière ouverture
+  localStorage.setItem('chloe_last_seen', now);
+
+  // Première ouverture → pas de modal
+  if (!lastSeen) return;
+
+  // Collecte les nouveautés depuis lastSeen
+  const news = [];
+
+  // 🏆 Badges gagnés depuis la dernière ouverture
+  const newBadges = STATE.unlockedBadges.filter(b => b.unlockedAt && b.unlockedAt > lastSeen);
+  if (newBadges.length > 0) {
+    const badgeDetails = newBadges.map(ub => {
+      const badge = [...ALL_BADGES, ...VAN_BADGES].find(b => b.id === ub.badgeId);
+      return badge ? badge.icon + ' ' + badge.name : '🏆 Badge';
     });
-  } catch(e) {}
+    news.push({
+      section: '🏆 Badges débloqués',
+      items: badgeDetails,
+      color: 'var(--amber)'
+    });
+  }
+
+  // ⭐ Points reçus ou perdus depuis lastSeen
+  const recentHistory = STATE.history.filter(h => h.date && h.date > lastSeen);
+  const bonusItems = recentHistory.filter(h => h.title && (h.title.startsWith('Bonus') || h.title.startsWith('Malus') || h.title.includes('déduits') || h.title.includes('attribués')));
+  if (bonusItems.length > 0) {
+    news.push({
+      section: '⭐ Points',
+      items: bonusItems.map(h => (Number(h.xp) > 0 ? '+' : '') + h.xp + ' XP — ' + h.title),
+      color: 'var(--violet)'
+    });
+  }
+
+  // 🎯 Nouvelles missions créées depuis lastSeen
+  const newMissions = STATE.missions.filter(m => m.createdAt && m.createdAt > lastSeen && !m.secret);
+  if (newMissions.length > 0) {
+    news.push({
+      section: '🎯 Nouvelles missions',
+      items: newMissions.map(m => (m.icon || '🎯') + ' ' + m.title + ' (+' + m.xp + ' XP)'),
+      color: 'var(--blue)'
+    });
+  }
+
+  // ✅ Missions accomplies depuis lastSeen
+  const doneMissions = recentHistory.filter(h => h.title && h.title.startsWith('Mission :'));
+  if (doneMissions.length > 0) {
+    news.push({
+      section: '✅ Missions accomplies',
+      items: doneMissions.map(h => h.icon + ' ' + h.title.replace('Mission : ', '') + ' (+' + h.xp + ' XP)'),
+      color: 'var(--green)'
+    });
+  }
+
+  // Si rien de nouveau → pas de modal
+  if (news.length === 0) return;
+
+  // Affiche le modal après 2 secondes
+  setTimeout(() => showAbsenceModal(news), 2000);
 }
 
-async function requestNotifPermission() {
-  if (!('Notification' in window)) { showToast('Notifications non supportées.', 'error'); return; }
-  if (Notification.permission === 'granted') { showToast('Notifications déjà activées ✅', 'success'); return; }
-  const perm = await Notification.requestPermission();
-  if (perm === 'granted') {
-    showToast('Notifications activées ! 🔔', 'success');
-    sendLocalNotif('🎉 Notifications activées !', 'Tu recevras des alertes pour tes missions et badges.', 'welcome');
-  } else {
-    showToast('Notifications refusées.', 'error');
-  }
-  updateNotifStatus();
+function showAbsenceModal(news) {
+  const modal = document.getElementById('absence-modal');
+  const content = document.getElementById('absence-content');
+  if (!modal || !content) return;
+
+  content.innerHTML = news.map(section =>
+    '<div class="absence-section">' +
+    '<div class="absence-section-title" style="color:' + section.color + '">' + section.section + '</div>' +
+    section.items.map(item =>
+      '<div class="absence-item">' + item + '</div>'
+    ).join('') +
+    '</div>'
+  ).join('');
+
+  modal.classList.remove('hidden');
 }
 
-function updateNotifStatus() {
-  const el = $('#notif-status');
-  const btn = $('#enable-notif-btn');
-  if (!el) return;
-  if (!('Notification' in window)) {
-    el.textContent = '⚠️ Non supportées sur cet appareil';
-    if (btn) btn.style.display = 'none';
-    return;
-  }
-  const labels = {
-    granted: '✅ Notifications activées',
-    denied: '❌ Refusées — activez-les dans Réglages iOS → Safari',
-    default: '⚪ Non activées — cliquez pour activer'
-  };
-  el.textContent = labels[Notification.permission] || '';
-  // Cache le bouton si déjà accordé ou refusé définitivement
-  if (btn) btn.style.display = Notification.permission === 'granted' ? 'none' : 'block';
-}
 function initPWA() {
   if (!('serviceWorker' in navigator)) return;
   navigator.serviceWorker.register('service-worker.js').then(reg => {

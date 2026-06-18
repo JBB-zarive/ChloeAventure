@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   CHLOÉ AVENTURE v5 – style.css
+   CHLOÉ AVENTURE v0.9 – style.css
 ═══════════════════════════════════════════════════════════════ */
 
 :root {
@@ -104,7 +104,6 @@ a { color: inherit; text-decoration: none; }
 .app {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  /* -webkit-fill-available = hauteur exacte écran iOS sans barres */
   height: 100vh;
   height: -webkit-fill-available;
   height: var(--real-vh, 100vh);
@@ -112,7 +111,6 @@ a { color: inherit; text-decoration: none; }
   flex-direction: column;
   overflow: hidden;
 }
-/* L'app-main prend tout l'espace restant entre header et nav */
 
 .app-header {
   height: calc(var(--header-h) + var(--safe-top));
@@ -383,7 +381,6 @@ a { color: inherit; text-decoration: none; }
 .form-check input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--violet); flex-shrink: 0; }
 .form-check label { font-size: 0.82rem; color: var(--text); cursor: pointer; }
 
-/* Emoji picker */
 .emoji-input { font-size: 1.6rem !important; text-align: center; padding: 6px 4px !important; cursor: pointer; border-radius: var(--radius-md) !important; }
 .emoji-picker-wrap { position: relative; }
 .emoji-hint { position: absolute; bottom: -16px; left: 0; font-size: 0.58rem; color: var(--text-muted); white-space: nowrap; }
@@ -420,7 +417,7 @@ a { color: inherit; text-decoration: none; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 
 @media (min-width: 520px) {
-  .badges-grid { grid-template-columns: repeat(4,1fr); }
+  /* badges-grid reste à 3 colonnes — sauf #van-badges-list qui est forcé séparément */
   .modal-card { border-radius: var(--radius-xl); margin: auto; }
   .modal { align-items: center; }
 }
@@ -430,92 +427,90 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ── Date limite mission ─────────────────────────────────────── */
-.mission-due {
-  font-size: 0.65rem;
-  font-weight: 700;
-}
+.mission-due { font-size: 0.65rem; font-weight: 700; }
 
 /* ── Compteur quotidien accueil ──────────────────────────────── */
-.daily-counter {
-  font-size: 0.82rem;
-  font-weight: 600;
-  margin-bottom: 10px;
-  margin-top: -4px;
-}
-
-/* ── Bouton replay ───────────────────────────────────────────── */
-.replay-btn {
-  width: 32px; height: 32px;
-  border-radius: 50%;
-  background: var(--bg-card-2);
-  border: 1px solid var(--border);
-  font-size: 0.85rem;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  transition: transform 0.2s var(--ease);
-  margin-bottom: 4px;
-}
-.replay-btn:active { transform: scale(0.9); }
+.daily-counter { font-size: 0.82rem; font-weight: 600; margin-bottom: 10px; margin-top: -4px; }
 
 /* ── Historique malus (rouge) ────────────────────────────────── */
 .history-xp.malus { color: var(--red); }
 
 /* ── Mission action flex column ──────────────────────────────── */
-.mission-action {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding-top: 2px;
-}
+.mission-action { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 2px; }
 
 /* ── Badge XP reward ─────────────────────────────────────────── */
-.badge-xp {
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: var(--amber);
-  font-family: var(--font-display);
-  margin-top: 3px;
-}
+.badge-xp { font-size: 0.65rem; font-weight: 800; color: var(--amber); font-family: var(--font-display); margin-top: 3px; }
 .badge-card.unlocked .badge-xp { color: var(--green); }
 
 /* ── Séparateur récompenses obtenues ─────────────────────────── */
-.rewards-separator {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 16px 0 10px;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-.rewards-separator::before,
-.rewards-separator::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
+.rewards-separator { display: flex; align-items: center; gap: 10px; margin: 16px 0 10px; color: var(--text-muted); font-size: 0.78rem; font-weight: 600; }
+.rewards-separator::before, .rewards-separator::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
 /* ── Récompense obtenue ───────────────────────────────────────── */
-.reward-obtained {
-  opacity: 0.6;
-  background: color-mix(in srgb, var(--green) 5%, var(--bg-card));
-  border-color: var(--green) !important;
-}
-.reward-check {
-  font-size: 1.3rem;
-  flex-shrink: 0;
-}
+.reward-obtained { opacity: 0.6; background: color-mix(in srgb, var(--green) 5%, var(--bg-card)); border-color: var(--green) !important; }
+.reward-check { font-size: 1.3rem; flex-shrink: 0; }
 
-/* ── Grille badges Van — 2 lignes de 3 ──────────────────── */
+/* ── Grille badges Van — 2 lignes de 3 (forcé toutes tailles) ── */
 #van-badges-list {
   display: grid !important;
   grid-template-columns: repeat(3, 1fr) !important;
   gap: 10px;
   overflow-x: visible !important;
 }
-#van-badges-list .badge-card {
-  min-width: 0;
+#van-badges-list .badge-card { min-width: 0; }
+
+/* ── Modal Pendant ton absence ───────────────────────────────── */
+.absence-card {
+  text-align: left;
+  max-height: 80vh;
+}
+.absence-header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+.absence-emoji {
+  font-size: 2.5rem;
+  margin-bottom: 6px;
+}
+.absence-header h2 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+.absence-header p {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.absence-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 50vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.absence-body::-webkit-scrollbar { display: none; }
+.absence-section {
+  background: var(--bg-card-2);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+}
+.absence-section-title {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+.absence-item {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.4;
+}
+.absence-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
