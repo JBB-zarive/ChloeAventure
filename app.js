@@ -790,7 +790,6 @@ function openMissionForm(id = null, defaultType = 'mission') {
     $('#mission-type-input').value = m.type || 'mission'; $('#mission-cat-input').value = m.cat;
     $('#mission-points-input').value = m.xp; $('#mission-freq-input').value = m.freq || 'unique';
     $('#mission-due-input').value = m.due || ''; $('#mission-validation-input').checked = m.validation || false;
-    $('#mission-secret-input').checked = m.secret || false;
   } else {
     $('#mission-form-title').textContent = defaultType === 'quete' ? 'Nouvelle quête' : 'Nouvelle mission';
     $('#mission-type-input').value = defaultType; $('#mission-icon-input').value = defaultType === 'quete' ? '🗺️' : '🎯';
