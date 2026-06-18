@@ -707,8 +707,17 @@ function checkAndUnlockBadges() {
       if (b.xpReward && b.xpReward > 0) {
         STATE.user.xp += b.xpReward;
         STATE.user.totalXp += b.xpReward;
-        // Recalcule le niveau avec les XP du badge
         STATE.user.level = getLevelInfo(STATE.user.xp).level;
+        // Ajoute dans l'historique local
+        STATE.history.push({
+          id: uid(),
+          icon: b.icon,
+          title: 'Badge : ' + b.name,
+          xp: b.xpReward,
+          date: new Date().toISOString()
+        });
+        // Envoie dans l'historique Sheets
+        API.addPoints(STATE.user.id, b.xpReward, 'Badge : ' + b.name).catch(() => {});
       }
       API.unlockBadge(STATE.user.id, b.id).catch(() => {});
     }
