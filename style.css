@@ -508,3 +508,14 @@ a { color: inherit; text-decoration: none; }
   font-size: 1.3rem;
   flex-shrink: 0;
 }
+
+/* ── Grille badges Van — 2 lignes de 3 ──────────────────── */
+#van-badges-list {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 10px;
+  overflow-x: visible !important;
+}
+#van-badges-list .badge-card {
+  min-width: 0;
+}
