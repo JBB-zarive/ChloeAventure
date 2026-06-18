@@ -306,6 +306,19 @@ function initApp() {
   // Affiche la version sur l'écran de chargement
   const versionEl = document.getElementById('splash-version');
   if (versionEl) versionEl.textContent = APP_VERSION;
+  // Force le streak à 2 une seule fois pour corriger le bug de calcul
+  const streakFixKey = 'chloe_streak_fix_v8';
+  if (!localStorage.getItem(streakFixKey)) {
+    STATE.user.streak = Math.max(STATE.user.streak, 2);
+    STATE.user.lastActiveDate = today();
+    localStorage.setItem(streakFixKey, '1');
+    saveCache();
+    // Synchronise vers Sheets
+    API.updateUser(STATE.user.id, {
+      streak: STATE.user.streak,
+      lastActiveDate: STATE.user.lastActiveDate,
+    }).catch(() => {});
+  }
   // Notifications : activées manuellement depuis Paramètres Parents
   if (!STATE.missions.length && API.getApiUrl()) { syncFromSheets().finally(() => hideSplash()); setTimeout(hideSplash, 6000); }
   else { setTimeout(hideSplash, 2000); startAutoSync(); }
@@ -584,16 +597,27 @@ function awardMission(id, mission) {
   const t = today();
   // Compte les missions quotidiennes accomplies aujourd'hui
   // (inclut celle qu'on vient d'enregistrer juste au-dessus)
+  // Missions quotidiennes accomplies aujourd'hui
   const dailyDoneToday = STATE.missions.filter(m =>
     m.freq === 'quotidien' && !m.secret &&
     STATE.completions[m.id]?.status === 'done' &&
     STATE.completions[m.id]?.date === t
   ).length;
 
+  // Missions Van accomplies aujourd'hui (comptent aussi pour le streak)
+  const vanDoneToday = STATE.missions.filter(m =>
+    (m.type === 'van' || m.cat === 'Van') && !m.secret &&
+    STATE.completions[m.id]?.status === 'done' &&
+    STATE.completions[m.id]?.date === t
+  ).length;
+
+  // Total : quotidiennes + van
+  const totalDoneToday = dailyDoneToday + vanDoneToday;
+
   const STREAK_MIN_MISSIONS = 3;
 
   // Le jour est validé si on atteint le seuil
-  if (dailyDoneToday >= STREAK_MIN_MISSIONS) {
+  if (totalDoneToday >= STREAK_MIN_MISSIONS) {
     // N'incrémente le streak qu'une seule fois par jour
     if (STATE.user.lastActiveDate !== t) {
       const last = STATE.user.lastActiveDate;
