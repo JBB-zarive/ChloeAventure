@@ -1,9 +1,9 @@
 /**
- * service-worker.js – Chloé Aventure v7
+ * service-worker.js – Chloé Aventure v0.9
  * Network First pour les fichiers JS — toujours la dernière version
  */
 
-const CACHE_NAME = 'chloe-aventure-v7';
+const CACHE_NAME = 'chloe-aventure-v9';
 
 // Fichiers JS : toujours depuis le réseau (network first)
 const NETWORK_FIRST = ['app.js', 'api.js', 'config.js'];
@@ -29,6 +29,10 @@ self.addEventListener('activate', e => {
       .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('message', e => {
+  if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('fetch', e => {
